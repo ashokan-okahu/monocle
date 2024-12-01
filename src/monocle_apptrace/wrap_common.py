@@ -1,15 +1,30 @@
 # pylint: disable=protected-access
+import inspect
 import logging
 import os
-import inspect
 from importlib.metadata import version
 from urllib.parse import urlparse
-from opentelemetry.trace import Tracer
+
 from opentelemetry.sdk.trace import Span
-from monocle_apptrace.utils import resolve_from_alias, with_tracer_wrapper, get_embedding_model, get_attribute, get_workflow_name, set_embedding_model, set_app_hosting_identifier_attribute
-from monocle_apptrace.utils import set_attribute, get_vectorstore_deployment
-from monocle_apptrace.utils import get_fully_qualified_class_name, get_nested_value
-from monocle_apptrace.message_processing import extract_messages, extract_assistant_message
+from opentelemetry.trace import Tracer
+
+from monocle_apptrace.message_processing import (
+    extract_assistant_message,
+    extract_messages,
+)
+from monocle_apptrace.utils import (
+    get_attribute,
+    get_embedding_model,
+    get_fully_qualified_class_name,
+    get_nested_value,
+    get_vectorstore_deployment,
+    get_workflow_name,
+    resolve_from_alias,
+    set_app_hosting_identifier_attribute,
+    set_attribute,
+    set_embedding_model,
+    with_tracer_wrapper,
+)
 
 logger = logging.getLogger(__name__)
 WORKFLOW_TYPE_KEY = "workflow_type"
@@ -121,7 +136,7 @@ def process_span(to_wrap, span, instance, args, kwargs, return_value):
                             try:
                                 arguments = {"instance":instance, "args":args, "kwargs":kwargs, "output":return_value}
                                 result = eval(accessor)(arguments)
-                                if result and isinstance(result, str):
+                                if result : #and isinstance(result, str):
                                     span.set_attribute(attribute_name, result)
                             except Exception as e:
                                 logger.error(f"Error processing accessor: {e}")

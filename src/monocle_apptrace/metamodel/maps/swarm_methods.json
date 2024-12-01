@@ -1,0 +1,14 @@
+{
+"wrapper_methods" : [
+    
+    {
+        "package": "swarm",
+        "object": "Swarm",
+        "method": "get_chat_completion",
+        "span_name": "swarm.openai",
+        "wrapper_package": "wrap_common",
+        "wrapper_method": "llm_wrapper",
+        "output_processor": ["metamodel/maps/attributes/inference/swarm_entities.json"]
+    }
+]
+}
