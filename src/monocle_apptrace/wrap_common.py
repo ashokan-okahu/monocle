@@ -149,7 +149,7 @@ def process_span(to_wrap, span, instance, args, kwargs, return_value):
             if 'events' in output_processor:
                 events = output_processor['events']
                 accessor_mapping = {
-                    "arguments": args,
+                    "arguments": arguments,
                     "response": return_value
                 }
                 for event in events:
@@ -164,7 +164,10 @@ def process_span(to_wrap, span, instance, args, kwargs, return_value):
                                 accessor_function = eval(accessor)
                                 for keyword, value in accessor_mapping.items():
                                     if keyword in accessor:
-                                        event_attributes[attribute_key] = accessor_function(value)
+                                        evaluated_val = accessor_function(value)
+                                        if isinstance(evaluated_val, list):
+                                           evaluated_val = [str(d) for d in evaluated_val]
+                                        event_attributes[attribute_key] = evaluated_val
                             except Exception as e:
                                 logger.error(f"Error evaluating accessor for attribute '{attribute_key}': {e}")
                     span.add_event(name=event_name, attributes=event_attributes)

@@ -43,7 +43,8 @@ dev = [
   'llama-index==0.10.30',
   'llama-index-embeddings-huggingface==0.2.0',
   'llama-index-vector-stores-chroma==0.1.9',
-  'parameterized==0.9.0'
+  'parameterized==0.9.0',
+  'git+https://github.com/openai/swarm.git'
 ]
 
 azure = [

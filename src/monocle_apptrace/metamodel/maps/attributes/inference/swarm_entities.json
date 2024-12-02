@@ -3,7 +3,7 @@
   "attributes": [
     [
       {
-        "_comment": "provider type ,name , deployment , inference_endpoint",
+        "_comment": "agent type",
         "attribute": "type",
         "accessor": "lambda arguments:'agent.oai'"
       },
@@ -36,23 +36,17 @@
       },
       {
         "attribute": "type",
-        "accessor": "lambda arguments: 'model.llm.'+lambda arguments:arguments['kwargs']['agent'].model"
+        "accessor": "lambda arguments: 'model.llm.'+arguments['kwargs']['agent'].model"
       }
     ]
   ],
   "events": [
     { "name":"data.input",
       "attributes": [
-
         {
-            "_comment": "this is instruction to LLM",
-            "attribute": "system",
-            "accessor": "lambda arguments: extract_messages(arguments)[0]"
-        },
-        {
-            "_comment": "this is user query to LLM",
-            "attribute": "user",
-            "accessor": "lambda arguments: extract_messages(arguments)[1]"
+            "_comment": "this is LLM input",
+            "attribute": "query",
+            "accessor": "lambda arguments: arguments['kwargs']['history']"
         }
       ]
     },
@@ -61,8 +55,8 @@
       "attributes": [
         {
             "_comment": "this is response from LLM",
-            "attribute": "assistant",
-            "accessor": "lambda response: extract_assistant_message(response)"
+            "attribute": "response",
+            "accessor": "lambda response: response.choices"
         }
       ]
    }

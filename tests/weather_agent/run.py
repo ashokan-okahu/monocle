@@ -23,4 +23,4 @@ setup_monocle_telemetry(
 
 
 if __name__ == "__main__":
-    run_demo_loop(weather_agent, stream=True, debug=True)
+    run_demo_loop(weather_agent, stream=False, debug=True)
