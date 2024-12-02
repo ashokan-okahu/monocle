@@ -1,12 +1,13 @@
 #pylint: disable=consider-using-with
 
-from os import linesep, path
-from io import TextIOWrapper
 from datetime import datetime
-from typing import Optional, Callable, Sequence
+from io import TextIOWrapper
+from os import linesep, path
+from typing import Callable, Optional, Sequence
+
+from opentelemetry.sdk.resources import SERVICE_NAME
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
-from opentelemetry.sdk.resources import SERVICE_NAME
 
 DEFAULT_FILE_PREFIX:str = "monocle_trace_"
 DEFAULT_TIME_FORMAT:str = "%Y-%m-%d_%H.%M.%S"
@@ -61,3 +62,13 @@ class FileSpanExporter(SpanExporter):
 
     def shutdown(self) -> None:
         self.reset_handle()
+
+
+class UpdatedFileSpanExporter (FileSpanExporter):
+ 
+    def rotate_file(self, trace_name:str, trace_id:int) -> None:
+        self.reset_handle()
+        self.current_file_path = path.join(self.output_path,
+                        self.file_prefix + trace_name + ".json")
+        self.out_handle = open(self.current_file_path, "w", encoding='UTF-8')
+        self.current_trace_id = trace_id

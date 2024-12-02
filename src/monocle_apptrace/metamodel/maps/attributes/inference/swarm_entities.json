@@ -13,6 +13,11 @@
         "accessor": "lambda arguments:arguments['kwargs']['agent'].name"
       },
       {
+        "_comment": "agent instructions. To be refactored",
+        "attribute": "instructions",
+        "accessor": "lambda arguments:arguments['kwargs']['agent'].instructions(arguments['kwargs']['context_variables']) if callable(arguments['kwargs']['agent'].instructions) else arguments['kwargs']['agent'].instructions"
+      },
+      {
         "_comment": "agent tools",
         "attribute": "tools",
         
