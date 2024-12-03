@@ -1,16 +1,13 @@
 import os
 
-from agents import weather_agent
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from swarm.repl import run_demo_loop
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from monocle_apptrace.exporters.file_exporter import FileSpanAppender
 from monocle_apptrace.instrumentor import setup_monocle_telemetry
-from monocle_apptrace.wrap_common import llm_wrapper, task_wrapper
-from monocle_apptrace.wrapper import WrapperMethod
 
 setup_monocle_telemetry(
-    workflow_name="pytorch_1",
-    span_processors=[BatchSpanProcessor(ConsoleSpanExporter())],
+    workflow_name="weather_flow",
+    span_processors=[BatchSpanProcessor(FileSpanAppender())],
     # wrapper_methods=[
     #             WrapperMethod(
     #                 package="swarm",
@@ -21,6 +18,8 @@ setup_monocle_telemetry(
     #         ]
     )
 
+from agents import weather_agent
+from swarm.repl import run_demo_loop
 
 if __name__ == "__main__":
-    run_demo_loop(weather_agent, stream=False, debug=True)
+    run_demo_loop(weather_agent, stream=True) #debug=True

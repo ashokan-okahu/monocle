@@ -4,7 +4,7 @@ from configs.agents import triage_agent
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from swarm.repl import run_demo_loop
 
-from monocle_apptrace.exporters.file_exporter import UpdatedFileSpanExporter
+from monocle_apptrace.exporters.file_exporter import FileSpanAppender
 from monocle_apptrace.instrumentor import setup_monocle_telemetry
 
 context_variables = {
@@ -25,7 +25,7 @@ The flight # is 1919. The flight departure date is 3pm ET, 5/21/2024.""",
 
 setup_monocle_telemetry(
     workflow_name="airline_flow",
-    span_processors=[BatchSpanProcessor(UpdatedFileSpanExporter())],
+    span_processors=[BatchSpanProcessor(FileSpanAppender())],
     # wrapper_methods=[
     #             WrapperMethod(
     #                 package="swarm",
@@ -37,4 +37,4 @@ setup_monocle_telemetry(
     )
 
 if __name__ == "__main__":
-    run_demo_loop(triage_agent, context_variables=context_variables)#debug=True
+    run_demo_loop(triage_agent, context_variables=context_variables, stream=False)#debug=True

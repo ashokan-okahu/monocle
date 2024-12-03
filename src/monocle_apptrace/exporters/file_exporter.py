@@ -64,11 +64,11 @@ class FileSpanExporter(SpanExporter):
         self.reset_handle()
 
 
-class UpdatedFileSpanExporter (FileSpanExporter):
+class FileSpanAppender(FileSpanExporter):
  
     def rotate_file(self, trace_name:str, trace_id:int) -> None:
         self.reset_handle()
         self.current_file_path = path.join(self.output_path,
                         self.file_prefix + trace_name + ".json")
-        self.out_handle = open(self.current_file_path, "w", encoding='UTF-8')
+        self.out_handle = open(self.current_file_path, "a", encoding='UTF-8')
         self.current_trace_id = trace_id
