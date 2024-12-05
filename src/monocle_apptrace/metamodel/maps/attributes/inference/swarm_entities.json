@@ -20,7 +20,6 @@
       {
         "_comment": "agent tools",
         "attribute": "tools",
-        
         "accessor": "lambda arguments: [func.__name__ for func in arguments['kwargs']['agent'].functions]"
       },
       {
@@ -61,7 +60,7 @@
         {
             "_comment": "this is response from LLM",
             "attribute": "response",
-            "accessor": "lambda response: response.choices"
+            "accessor": "lambda response: handle_openai_response(response)"
         }
       ]
    }

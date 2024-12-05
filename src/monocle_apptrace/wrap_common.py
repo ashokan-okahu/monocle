@@ -11,6 +11,7 @@ from opentelemetry.trace import Tracer
 from monocle_apptrace.message_processing import (
     extract_assistant_message,
     extract_messages,
+    handle_openai_response,
 )
 from monocle_apptrace.utils import (
     get_attribute,

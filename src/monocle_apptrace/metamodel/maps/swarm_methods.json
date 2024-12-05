@@ -9,14 +9,6 @@
         "wrapper_package": "wrap_common",
         "wrapper_method": "llm_wrapper",
         "output_processor": ["metamodel/maps/attributes/inference/swarm_entities.json"]
-    },
-    {
-        "package": "swarm.repl.repl",
-        "method": "process_and_print_streaming_response",
-        "span_name": "swarm.openai",
-        "wrapper_package": "wrap_common",
-        "wrapper_method": "llm_wrapper",
-        "output_processor": ["metamodel/maps/attributes/inference/swarm_entities.json"]
     }
 ]
 }

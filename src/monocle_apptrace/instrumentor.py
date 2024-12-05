@@ -1,18 +1,21 @@
-import logging, os
+import logging
+import os
 from typing import Collection, List
-from wrapt import wrap_function_wrapper
-from opentelemetry.trace import get_tracer
+
+from opentelemetry import trace
+from opentelemetry.context import attach, get_value, set_value
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
-from opentelemetry.sdk.trace import TracerProvider, Span
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry import trace
-from opentelemetry.context import get_value, attach, set_value
+from opentelemetry.sdk.trace import Span, TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanProcessor
+from opentelemetry.trace import get_tracer
+from wrapt import wrap_function_wrapper
+
+from monocle_apptrace.exporters.monocle_exporters import get_monocle_exporter
 from monocle_apptrace.utils import process_wrapper_method_config
 from monocle_apptrace.wrap_common import SESSION_PROPERTIES_KEY
 from monocle_apptrace.wrapper import INBUILT_METHODS_LIST, WrapperMethod
-from monocle_apptrace.exporters.monocle_exporters import get_monocle_exporter
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ class MonocleInstrumentor(BaseInstrumentor):
             try:
                 wrap_package = wrapped_method.get("package")
                 wrap_object = wrapped_method.get("object")
-                wrap_method = wrapped_method.get("method")
+                wrap_method = wrapped_method.get("method", None)
                 wrapper = wrapped_method.get("wrapper")
                 wrap_function_wrapper(
                     wrap_package,

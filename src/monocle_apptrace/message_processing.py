@@ -4,7 +4,9 @@ and assistant messages from various input formats.
 """
 
 import logging
+
 from monocle_apptrace.utils import get_attribute
+
 DATA_INPUT_KEY = "data.input"
 
 logger = logging.getLogger(__name__)
@@ -55,6 +57,16 @@ def extract_assistant_message(response):
         logger.warning("Warning: Error occurred in extract_assistant_message: %s", str(e))
         return ""
 
+
+def handle_openai_response(response):
+    try:
+        if hasattr(response,'__stream__'):
+            return str(response.response.headers)
+        else:
+            return response.choices
+    except Exception as e:
+        logger.warning("Warning: Error occurred in handle_stream: %s", str(e))
+        return ""
 
 def extract_query_from_content(content):
     try:
