@@ -1,16 +1,32 @@
 # pylint: disable=protected-access
+import inspect
 import logging
 import os
-import inspect
+from functools import wraps
+from importlib import import_module
 from importlib.metadata import version
 from urllib.parse import urlparse
-from opentelemetry.trace import Tracer
+
 from opentelemetry.sdk.trace import Span
-from monocle_apptrace.utils import resolve_from_alias, with_tracer_wrapper, get_embedding_model, get_attribute, get_workflow_name, set_embedding_model, set_app_hosting_identifier_attribute
-from monocle_apptrace.utils import set_attribute, get_vectorstore_deployment
-from monocle_apptrace.utils import get_fully_qualified_class_name, get_nested_value
-from monocle_apptrace.message_processing import extract_messages, extract_assistant_message
-from functools import wraps
+from opentelemetry.trace import Tracer
+
+# from monocle_apptrace.langchain.metamodel.attributes.processor import (
+#     extract_assistant_message,
+#     extract_messages,
+# )
+from monocle_apptrace.utils import (
+    get_attribute,
+    get_embedding_model,
+    get_fully_qualified_class_name,
+    get_nested_value,
+    get_vectorstore_deployment,
+    get_workflow_name,
+    resolve_from_alias,
+    set_app_hosting_identifier_attribute,
+    set_attribute,
+    set_embedding_model,
+    with_tracer_wrapper,
+)
 
 logger = logging.getLogger(__name__)
 WORKFLOW_TYPE_KEY = "workflow_type"
@@ -20,7 +36,7 @@ PROMPT_INPUT_KEY = "data.input"
 PROMPT_OUTPUT_KEY = "data.output"
 QUERY = "input"
 RESPONSE = "response"
-SESSION_PROPERTIES_KEY = "session"
+
 INFRA_SERVICE_KEY = "infra_service_name"
 
 TYPE = "type"
@@ -136,7 +152,7 @@ def process_span(to_wrap, span, instance, args, kwargs, return_value):
                             attribute_name = f"entity.{span_index+1}.{attribute}"
                             try:
                                 arguments = {"instance":instance, "args":args, "kwargs":kwargs, "output":return_value}
-                                result = eval(accessor)(arguments)
+                                result = accessor(arguments)
                                 if result and isinstance(result, str):
                                     span.set_attribute(attribute_name, result)
                             except Exception as e:
@@ -161,10 +177,10 @@ def process_span(to_wrap, span, instance, args, kwargs, return_value):
                         accessor = attribute.get("accessor")
                         if accessor:
                             try:
-                                accessor_function = eval(accessor)
+                                signature = inspect.signature(accessor)
                                 for keyword, value in accessor_mapping.items():
-                                    if keyword in accessor:
-                                        event_attributes[attribute_key] = accessor_function(value)
+                                    if  keyword in signature.parameters:
+                                        event_attributes[attribute_key] = accessor(value)
                             except Exception as e:
                                 logger.error(f"Error evaluating accessor for attribute '{attribute_key}': {e}")
                     span.add_event(name=event_name, attributes=event_attributes)
@@ -173,6 +189,11 @@ def process_span(to_wrap, span, instance, args, kwargs, return_value):
             logger.warning("empty or entities json is not in correct format")
     if span_index > 0:
         span.set_attribute("entity.count", span_index)
+
+# Function to check if a parameter exists in the lambda function
+def has_parameter(lambda_func, param_name):
+    signature = inspect.signature(lambda_func)
+    return param_name in signature.parameters
 
 def set_workflow_attributes(to_wrap, span: Span, span_index):
     return_value = 1
@@ -496,3 +517,22 @@ def update_span_with_prompt_output(to_wrap, wrapped_args, span: Span):
         span.add_event(PROMPT_OUTPUT_KEY, {RESPONSE: wrapped_args})
     elif isinstance(wrapped_args, dict):
         span.add_event(PROMPT_OUTPUT_KEY, wrapped_args)
+
+
+# def process_wrapper_method_config(
+#         wrapper_methods_config: str,
+#         attributes_config_base_path: str = ""):
+#     for wrapper_method in wrapper_methods_config:
+#         if "wrapper_package" in wrapper_method and "wrapper_method" in wrapper_method:
+#             wrapper_method["wrapper"] = get_wrapper_method(
+#                 wrapper_method["wrapper_package"], wrapper_method["wrapper_method"])
+#             if "span_name_getter_method" in wrapper_method:
+#                 wrapper_method["span_name_getter"] = get_wrapper_method(
+#                     wrapper_method["span_name_getter_package"],
+#                     wrapper_method["span_name_getter_method"])
+#         if "output_processor" in wrapper_method and wrapper_method["output_processor"]:
+#             load_output_processor(wrapper_method, attributes_config_base_path)
+
+# def get_wrapper_method(package_name: str, method_name: str):
+#     wrapper_module = import_module("monocle_apptrace." + package_name)
+#     return getattr(wrapper_module, method_name)

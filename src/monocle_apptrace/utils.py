@@ -1,13 +1,15 @@
-import logging
+import importlib.util
 import json
-from importlib import import_module
+import logging
 import os
-from opentelemetry.trace import NonRecordingSpan,Span
-from opentelemetry.trace.propagation import _SPAN_KEY
-from opentelemetry.context import (attach, detach,get_current)
-from opentelemetry.context import attach, set_value, get_value
-from monocle_apptrace.constants import service_name_map, service_type_map
+from importlib import import_module
 from json.decoder import JSONDecodeError
+
+from opentelemetry.context import attach, detach, get_current, get_value, set_value
+from opentelemetry.trace import NonRecordingSpan, Span
+from opentelemetry.trace.propagation import _SPAN_KEY
+
+from monocle_apptrace.constants import service_name_map, service_type_map
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +89,8 @@ def load_output_processor(wrapper_method, attributes_config_base_path):
 
         logger.info(f'Absolute file path is: {absolute_file_path}')
         try:
-            with open(absolute_file_path, encoding='UTF-8') as op_file:
-                wrapper_method["output_processor"] = json.load(op_file)
-                logger.info('Output processor loaded successfully.')
+            wrapper_method["output_processor"] = load_config(absolute_file_path)
+            logger.info('Output processor loaded successfully.')
         except FileNotFoundError:
             logger.error(f"Error: File not found at {absolute_file_path}.")
         except JSONDecodeError:
@@ -98,6 +99,22 @@ def load_output_processor(wrapper_method, attributes_config_base_path):
             logger.error(f"Error: An unexpected error occurred: {e}")
     else:
         logger.error("Invalid or missing output processor file path.")
+
+
+def load_config(config_path):
+    #Get just the file name from the absolute path
+    file_name = os.path.basename(config_path)
+    # Strip the .py extension
+    file_name = os.path.splitext(file_name)[0]
+    spec = importlib.util.spec_from_file_location(file_name, config_path)
+    config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config)
+    if file_name=='inference':
+        return config.inference
+    elif file_name =='retrieval':
+        return config.retrieval
+    else:
+        return None
 
 def get_wrapper_methods_config(
         wrapper_methods_config_path: str,
