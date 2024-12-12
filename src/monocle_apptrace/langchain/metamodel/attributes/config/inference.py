@@ -1,4 +1,4 @@
-from monocle_apptrace.langchain.metamodel.attributes import processor
+from monocle_apptrace.langchain.metamodel.attributes import atttribute_util
 from monocle_apptrace.utils import resolve_from_alias
 
 inference ={
@@ -42,12 +42,12 @@ inference ={
         {
             "_comment": "this is instruction to LLM",
             "attribute": "system",
-            "accessor": lambda arguments: processor.extract_messages(arguments)[0]
+            "accessor": lambda arguments: atttribute_util.extract_messages(arguments)[0]
         },
         {
             "_comment": "this is user query to LLM",
             "attribute": "user",
-            "accessor": lambda arguments: processor.extract_messages(arguments)[1]
+            "accessor": lambda arguments: atttribute_util.extract_messages(arguments)[1]
         }
       ]
     },
@@ -55,9 +55,9 @@ inference ={
       "name":"data.output",
       "attributes": [
         {
-            "_comment": "this is response from LLM",
+            "_comment": "this is result from LLM",
             "attribute": "assistant",
-            "accessor": lambda response: processor.extract_assistant_message(response)
+            "accessor": lambda result: atttribute_util.extract_assistant_message(result)
         }
       ]
    }

@@ -42,7 +42,7 @@ def dont_throw(func):
 def with_tracer_wrapper(func):
     """Helper for providing tracer for wrapper functions."""
 
-    def _with_tracer(tracer, to_wrap):
+    def _with_tracer(tracer, handler, to_wrap):
         def wrapper(wrapped, instance, args, kwargs):
             token = None
             try:
@@ -55,7 +55,7 @@ def with_tracer_wrapper(func):
             except Exception as e:
                 logger.error("Exception in attaching parent context: %s", e)
 
-            val = func(tracer, to_wrap, wrapped, instance, args, kwargs)
+            val = func(tracer, handler, to_wrap, wrapped, instance, args, kwargs)
             # Detach the token if it was set
             if token:
                 try:

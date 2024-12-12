@@ -19,7 +19,7 @@
         "object": "BaseChatModel",
         "method": "invoke",
         "wrapper_package": "wrap_common",
-        "wrapper_method": "llm_wrapper",
+        "wrapper_method": "task_wrapper",
         "output_processor": ["config/inference.py"]
     },
     {
@@ -27,7 +27,7 @@
         "object": "BaseChatModel",
         "method": "ainvoke",
         "wrapper_package": "wrap_common",
-        "wrapper_method": "allm_wrapper",
+        "wrapper_method": "atask_wrapper",
         "output_processor": ["config/inference.py"]
     },
     {
@@ -35,7 +35,7 @@
         "object": "LLM",
         "method": "_generate",
         "wrapper_package": "wrap_common",
-        "wrapper_method": "llm_wrapper",
+        "wrapper_method": "task_wrapper",
         "output_processor": ["config/inference.py"]
     },
     {
@@ -43,7 +43,7 @@
         "object": "LLM",
         "method": "_agenerate",
         "wrapper_package": "wrap_common",
-        "wrapper_method": "allm_wrapper",
+        "wrapper_method": "atask_wrapper",
         "output_processor": ["config/inference.py"]
     },
     {
@@ -51,7 +51,7 @@
         "object": "BaseLLM",
         "method": "invoke",
         "wrapper_package": "wrap_common",
-        "wrapper_method": "llm_wrapper",
+        "wrapper_method": "task_wrapper",
         "output_processor": ["config/inference.py"]
     },
     {
@@ -59,7 +59,7 @@
         "object": "BaseLLM",
         "method": "ainvoke",
         "wrapper_package": "wrap_common",
-        "wrapper_method": "allm_wrapper",
+        "wrapper_method": "atask_wrapper",
         "output_processor": ["config/inference.py"]
     },
     {

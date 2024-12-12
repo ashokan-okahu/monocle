@@ -1,5 +1,5 @@
 import logging
-from typing import Collection, List
+from typing import Collection, Dict, List
 
 from opentelemetry import trace
 from opentelemetry.context import attach, get_value, set_value
@@ -12,6 +12,7 @@ from opentelemetry.trace import get_tracer
 from wrapt import wrap_function_wrapper
 
 from monocle_apptrace.exporters.monocle_exporters import get_monocle_exporter
+from monocle_apptrace.span_handler import SpanHandler
 from monocle_apptrace.utils import process_wrapper_method_config
 from monocle_apptrace.wrapper import INBUILT_METHODS_LIST, WrapperMethod
 
@@ -25,11 +26,14 @@ class MonocleInstrumentor(BaseInstrumentor):
     workflow_name: str = ""
     user_wrapper_methods: list[WrapperMethod] = []
     instrumented_method_list: list[object] = []
+    handlers:Dict[str,SpanHandler] = {} # dict of handlers
 
     def __init__(
             self,
+            handlers,
             user_wrapper_methods: list[WrapperMethod] = None) -> None:
         self.user_wrapper_methods = user_wrapper_methods or []
+        self.handlers = handlers or {'default':SpanHandler()}
         super().__init__()
 
     def instrumentation_dependencies(self) -> Collection[str]:
@@ -57,10 +61,13 @@ class MonocleInstrumentor(BaseInstrumentor):
                 wrap_object = wrapped_method.get("object")
                 wrap_method = wrapped_method.get("method")
                 wrapper = wrapped_method.get("wrapper")
+                #get the requisite handler or default one
+                handler_key = wrapped_method.get("span_handler",'default')
+                handler =  self.handlers.get(handler_key)
                 wrap_function_wrapper(
                     wrap_package,
                     f"{wrap_object}.{wrap_method}" if wrap_object else wrap_method,
-                    wrapper(tracer, wrapped_method),
+                    wrapper(tracer, handler, wrapped_method),
                 )
                 self.instrumented_method_list.append(wrapped_method)
             except Exception as ex:
@@ -89,6 +96,7 @@ class MonocleInstrumentor(BaseInstrumentor):
 def setup_monocle_telemetry(
         workflow_name: str,
         span_processors: List[SpanProcessor] = None,
+        span_handlers: Dict[str,SpanHandler] = None,
         wrapper_methods: List[WrapperMethod] = None):
     resource = Resource(attributes={
         SERVICE_NAME: workflow_name
@@ -107,7 +115,8 @@ def setup_monocle_telemetry(
             trace_provider.add_span_processor(processor)
     if is_proxy_provider:
         trace.set_tracer_provider(trace_provider)
-    instrumentor = MonocleInstrumentor(user_wrapper_methods=wrapper_methods or [])
+    instrumentor = MonocleInstrumentor(user_wrapper_methods=wrapper_methods or [], 
+                                       handlers=span_handlers)
     # instrumentor.app_name = workflow_name
     if not instrumentor.is_instrumented_by_opentelemetry:
         instrumentor.instrument(trace_provider=trace_provider)
