@@ -4,12 +4,16 @@ import logging
 import os
 from importlib import import_module
 from json.decoder import JSONDecodeError
+from typing import Callable, Generic, Optional, TypeVar
 
 from opentelemetry.context import attach, detach, get_current, get_value, set_value
 from opentelemetry.trace import NonRecordingSpan, Span
 from opentelemetry.trace.propagation import _SPAN_KEY
 
 from monocle_apptrace.constants import service_name_map, service_type_map
+
+T = TypeVar('T')
+U = TypeVar('U')
 
 logger = logging.getLogger(__name__)
 
@@ -267,3 +271,35 @@ def get_host_from_map(my_map, keys_to_check):
         if seed_connections and 'host' in seed_connections[0].__dict__:
             return seed_connections[0].__dict__['host']
     return None
+
+
+
+class Option(Generic[T]):
+    def __init__(self, value: Optional[T]):
+        self.value = value
+
+    def is_some(self) -> bool:
+        return self.value is not None
+
+    def is_none(self) -> bool:
+        return self.value is None
+
+    def unwrap_or(self, default: T) -> T:
+        return self.value if self.is_some() else default
+
+    def map(self, func: Callable[[T], U]) -> 'Option[U]':
+        if self.is_some():
+            return Option(func(self.value))
+        return Option(None)
+
+    def and_then(self, func: Callable[[T], 'Option[U]']) -> 'Option[U]':
+        if self.is_some():
+            return func(self.value)
+        return Option(None)
+
+# Example usage
+def try_option(func: Callable[..., T], *args, **kwargs) -> Option[T]:
+    try:
+        return Option(func(*args, **kwargs))
+    except Exception:
+        return Option(None)

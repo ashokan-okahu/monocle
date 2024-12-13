@@ -1,4 +1,4 @@
-from monocle_apptrace.langchain.metamodel.attributes import atttribute_util
+from monocle_apptrace.langchain.metamodel.attributes import attribute_util
 from monocle_apptrace.utils import resolve_from_alias
 
 inference ={
@@ -12,7 +12,7 @@ inference ={
       },
       {
         "attribute": "provider_name",
-        "accessor": lambda arguments:arguments['kwargs']['provider_name']
+        "accessor": lambda arguments:attribute_util.extract_provider_name(arguments['instance'])
       },
       {
         "attribute": "deployment",
@@ -20,7 +20,7 @@ inference ={
       },
       {
         "attribute": "inference_endpoint",
-        "accessor": lambda arguments: resolve_from_alias(arguments['instance'].__dict__, ['azure_endpoint', 'api_base']) or arguments['kwargs']['inference_endpoint']
+        "accessor": lambda arguments: resolve_from_alias(arguments['instance'].__dict__, ['azure_endpoint', 'api_base']) or attribute_util.extract_inference_endpoint(arguments['instance'])
       }
     ],
     [
@@ -42,12 +42,12 @@ inference ={
         {
             "_comment": "this is instruction to LLM",
             "attribute": "system",
-            "accessor": lambda arguments: atttribute_util.extract_messages(arguments)[0]
+            "accessor": lambda arguments: attribute_util.extract_messages(arguments)[0]
         },
         {
             "_comment": "this is user query to LLM",
             "attribute": "user",
-            "accessor": lambda arguments: atttribute_util.extract_messages(arguments)[1]
+            "accessor": lambda arguments: attribute_util.extract_messages(arguments)[1]
         }
       ]
     },
@@ -57,7 +57,7 @@ inference ={
         {
             "_comment": "this is result from LLM",
             "attribute": "assistant",
-            "accessor": lambda result: atttribute_util.extract_assistant_message(result)
+            "accessor": lambda result: attribute_util.extract_assistant_message(result)
         }
       ]
    }
