@@ -1,7 +1,13 @@
 import logging
+import os
 
 from opentelemetry.context import get_value
 from opentelemetry.sdk.trace import Span
+
+from monocle_apptrace.instrumentation.common.constants import (
+    service_name_map,
+    service_type_map,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +41,7 @@ class SpanHandler:
         span_index = 0
         if self.__is_root_span(span):
             span_index += self.set_workflow_attributes(to_wrap, span, span_index+1)
-            #span_index += self.set_app_hosting_identifier_attribute(span, span_index+1)
+            span_index += self.set_app_hosting_identifier_attribute(span, span_index+1)
 
         if 'output_processor' in to_wrap:    
             output_processor=to_wrap['output_processor']
@@ -105,6 +111,17 @@ class SpanHandler:
                 workflow_type_set = True
         if not workflow_type_set:
             span.set_attribute(f"entity.{span_index}.type", "workflow.generic")
+        return return_value
+
+    def set_app_hosting_identifier_attribute(self, span, span_index):
+        return_value = 0
+        # Search env to indentify the infra service type, if found check env for service name if possible
+        for type_env, type_name in service_type_map.items():
+            if type_env in os.environ:
+                return_value = 1
+                span.set_attribute(f"entity.{span_index}.type", f"app_hosting.{type_name}")
+                entity_name_env = service_name_map.get(type_name, "unknown")
+                span.set_attribute(f"entity.{span_index}.name", os.environ.get(entity_name_env, "generic"))
         return return_value
 
     def get_workflow_name(self, span: Span) -> str:
