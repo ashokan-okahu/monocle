@@ -1,6 +1,8 @@
 # pylint: disable=too-few-public-methods
 from monocle_apptrace.instrumentation.common.wrapper import task_wrapper
-from monocle_apptrace.instrumentation.langchain import LANGCHAIN_METHODS
+from monocle_apptrace.instrumentation.metamodel.langchain.methods import (
+    LANGCHAIN_METHODS,
+)
 
 
 class WrapperMethod:
@@ -10,16 +12,18 @@ class WrapperMethod:
             object_name: str,
             method: str,
             span_name: str = None,
-            output_processor : list[str] = None,
-            wrapper = task_wrapper
+            output_processor : str = None,
+            wrapper_method = task_wrapper,
+            span_handler = 'default'
             ):
         self.package = package
         self.object = object_name
         self.method = method
         self.span_name = span_name
         self.output_processor=output_processor
+        self.span_handler = span_handler
 
-        self.wrapper = wrapper
+        self.wrapper_method = wrapper_method
 
     def to_dict(self) -> dict:
         # Create a dictionary representation of the instance
@@ -29,9 +33,10 @@ class WrapperMethod:
             'method': self.method,
             'span_name': self.span_name,
             'output_processor': self.output_processor,
-            'wrapper': self.wrapper
+            'wrapper_method': self.wrapper_method,
+            'span_handler': self.span_handler
         }
         return instance_dict
 
 
-INBUILT_METHODS_LIST = LANGCHAIN_METHODS
+DEFAULT_METHODS_LIST = LANGCHAIN_METHODS

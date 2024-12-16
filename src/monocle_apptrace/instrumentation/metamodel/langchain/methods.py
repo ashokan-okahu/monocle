@@ -1,122 +1,113 @@
-{
-"wrapper_methods" : [
+from monocle_apptrace.instrumentation.common.wrapper import atask_wrapper, task_wrapper
+from monocle_apptrace.instrumentation.metamodel.langchain.inference import (
+    INFERENCE,
+)
+from monocle_apptrace.instrumentation.metamodel.langchain.retrieval import (
+    RETRIEVAL,
+)
+
+LANGCHAIN_METHODS = [
     {
         "package": "langchain.prompts.base",
         "object": "BasePromptTemplate",
         "method": "invoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper"
+        "wrapper_method": task_wrapper
     },
     {
         "package": "langchain.prompts.base",
         "object": "BasePromptTemplate",
         "method": "ainvoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper"
+        "wrapper_method": atask_wrapper
     },
     {
         "package": "langchain.chat_models.base",
         "object": "BaseChatModel",
-        "method": "invoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper",
-        "output_processor": ["config/inference.py"]
+        "method": "invoke",       
+        "wrapper_method": task_wrapper,
+        "output_processor": INFERENCE
     },
     {
         "package": "langchain.chat_models.base",
         "object": "BaseChatModel",
         "method": "ainvoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper",
-        "output_processor": ["config/inference.py"]
+        "wrapper_method": atask_wrapper,
+        "output_processor": RETRIEVAL
     },
     {
         "package": "langchain_core.language_models.llms",
         "object": "LLM",
         "method": "_generate",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper",
-        "output_processor": ["config/inference.py"]
+        "wrapper_method": task_wrapper,
+        "output_processor": INFERENCE
     },
     {
         "package": "langchain_core.language_models.llms",
         "object": "LLM",
         "method": "_agenerate",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper",
-        "output_processor": ["config/inference.py"]
+        "wrapper_method": atask_wrapper,
+        "output_processor": INFERENCE
     },
     {
         "package": "langchain_core.language_models.llms",
         "object": "BaseLLM",
         "method": "invoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper",
-        "output_processor": ["config/inference.py"]
+        "wrapper_method": task_wrapper,
+        "output_processor": INFERENCE
     },
     {
         "package": "langchain_core.language_models.llms",
         "object": "BaseLLM",
         "method": "ainvoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper",
-        "output_processor": ["config/inference.py"]
+        "wrapper_method": atask_wrapper,
+        "output_processor": INFERENCE
     },
     {
         "package": "langchain_core.retrievers",
         "object": "BaseRetriever",
         "method": "invoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper",
-        "output_processor": ["config/retrieval.py"]
+        "wrapper_method": task_wrapper,
+        "output_processor": RETRIEVAL
 
     },
     {
         "package": "langchain_core.retrievers",
         "object": "BaseRetriever",
         "method": "ainvoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper",
-        "output_processor": ["config/retrieval.py"],
-        "span_handler":"langchain"
+        "wrapper_method": atask_wrapper,
+        "output_processor": RETRIEVAL
     },
     {
         "package": "langchain.schema",
         "object": "BaseOutputParser",
         "method": "invoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper"
+        "wrapper_method": task_wrapper
     },
     {
         "package": "langchain.schema",
         "object": "BaseOutputParser",
         "method": "ainvoke",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper"
+        "wrapper_method": atask_wrapper
     },
     {
         "package": "langchain.schema.runnable",
         "object": "RunnableSequence",
         "method": "invoke",
         "span_name": "langchain.workflow",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper"
+        "wrapper_method": task_wrapper
     },
     {
         "package": "langchain.schema.runnable",
         "object": "RunnableSequence",
         "method": "ainvoke",
         "span_name": "langchain.workflow",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper"
+        "wrapper_method": atask_wrapper
     },
     {
         "package": "langchain.schema.runnable",
         "object": "RunnableParallel",
         "method": "invoke",
         "span_name": "langchain.workflow",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "task_wrapper"
+        "wrapper_method": task_wrapper
 
     },
     {
@@ -124,9 +115,6 @@
         "object": "RunnableParallel",
         "method": "ainvoke",
         "span_name": "langchain.workflow",
-        "wrapper_package": "wrapper",
-        "wrapper_method": "atask_wrapper",
-        "span_handler":"llamaindex"
+        "wrapper_method": atask_wrapper,
     }
 ]
-}

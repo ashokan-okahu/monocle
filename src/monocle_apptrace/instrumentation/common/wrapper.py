@@ -11,6 +11,7 @@ from monocle_apptrace.instrumentation.common.utils import (
 
 logger = logging.getLogger(__name__)
 
+
 @with_tracer_wrapper
 def task_wrapper(tracer: Tracer, handler: SpanHandler,to_wrap, wrapped, instance, args, kwargs):
 

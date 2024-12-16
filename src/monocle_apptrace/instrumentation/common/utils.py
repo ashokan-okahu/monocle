@@ -1,19 +1,9 @@
-import importlib.util
-import json
 import logging
-import os
-from importlib import import_module
-from json.decoder import JSONDecodeError
 from typing import Callable, Generic, Optional, TypeVar
 
 from opentelemetry.context import attach, detach, get_current, get_value, set_value
 from opentelemetry.trace import NonRecordingSpan, Span
 from opentelemetry.trace.propagation import _SPAN_KEY
-
-from monocle_apptrace.instrumentation.common.constants import (
-    service_name_map,
-    service_type_map,
-)
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -73,110 +63,6 @@ def with_tracer_wrapper(func):
         return wrapper
 
     return _with_tracer
-
-def resolve_from_alias(my_map, alias):
-    """Find a alias that is not none from list of aliases"""
-
-    for i in alias:
-        if i in my_map.keys():
-            return my_map[i]
-    return None
-
-def load_output_processor(wrapper_method, attributes_config_base_path):
-    """Load the output processor from a file if the file path is provided and valid."""
-    logger = logging.getLogger()
-    output_processor_file_path = wrapper_method["output_processor"][0]
-    logger.info(f'Output processor file path is: {output_processor_file_path}')
-
-    if isinstance(output_processor_file_path, str) and output_processor_file_path:  # Combined condition
-        if not attributes_config_base_path:
-            absolute_file_path = os.path.abspath(output_processor_file_path)
-        else:
-            absolute_file_path = os.path.join(attributes_config_base_path, output_processor_file_path)
-
-        logger.info(f'Absolute file path is: {absolute_file_path}')
-        try:
-            wrapper_method["output_processor"] = load_config(absolute_file_path)
-            logger.info('Output processor loaded successfully.')
-        except FileNotFoundError:
-            logger.error(f"Error: File not found at {absolute_file_path}.")
-        except JSONDecodeError:
-            logger.error(f"Error: Invalid JSON content in the file {absolute_file_path}.")
-        except Exception as e:
-            logger.error(f"Error: An unexpected error occurred: {e}")
-    else:
-        logger.error("Invalid or missing output processor file path.")
-
-
-def load_config(config_path):
-    #Get just the file name from the absolute path
-    file_name = os.path.basename(config_path)
-    # Strip the .py extension
-    file_name = os.path.splitext(file_name)[0]
-    spec = importlib.util.spec_from_file_location(file_name, config_path)
-    config = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(config)
-    if file_name=='inference':
-        return config.inference
-    elif file_name =='retrieval':
-        return config.retrieval
-    else:
-        return None
-
-def get_wrapper_methods_config(
-        wrapper_methods_config_path: str,
-        attributes_config_base_path: str = None
-):
-    parent_dir = os.path.dirname(os.path.join(os.path.dirname(__file__), '..'))
-    wrapper_methods_config = load_wrapper_methods_config_from_file(
-        wrapper_methods_config_path=os.path.join(parent_dir, wrapper_methods_config_path))
-    process_wrapper_methods_config(
-        wrapper_methods_config=wrapper_methods_config,
-        attributes_config_base_path=attributes_config_base_path)
-    return wrapper_methods_config
-
-def load_wrapper_methods_config_from_file(
-        wrapper_methods_config_path: str):
-    json_data = {}
-
-    with open(wrapper_methods_config_path, encoding='UTF-8') as config_file:
-        json_data = json.load(config_file)
-
-    return json_data["wrapper_methods"]
-
-def process_wrapper_methods_config( wrapper_methods_config: list, attributes_config_base_path: str = ""):
-    for wrapper_method in wrapper_methods_config:
-        process_wrapper_method_config(
-            wrapper_method=wrapper_method,
-            attributes_config_base_path=attributes_config_base_path)
-    
-def process_wrapper_method_config(
-        wrapper_method: dict,
-        attributes_config_base_path: str = ""):
-        if "wrapper_package" in wrapper_method and "wrapper_method" in wrapper_method:
-            wrapper_method["wrapper"] = get_wrapper_method(
-                wrapper_method["wrapper_package"], wrapper_method["wrapper_method"])
-            if "span_name_getter_method" in wrapper_method:
-                wrapper_method["span_name_getter"] = get_wrapper_method(
-                    wrapper_method["span_name_getter_package"],
-                    wrapper_method["span_name_getter_method"])
-        if "output_processor" in wrapper_method and wrapper_method["output_processor"]:
-            load_output_processor(wrapper_method, attributes_config_base_path)
-
-def get_wrapper_method(package_name: str, method_name: str):
-    wrapper_module = import_module("monocle_apptrace.instrumentation.common." + package_name)
-    return getattr(wrapper_module, method_name)
-
-def set_app_hosting_identifier_attribute(span, span_index):
-    return_value = 0
-    # Search env to indentify the infra service type, if found check env for service name if possible
-    for type_env, type_name in service_type_map.items():
-        if type_env in os.environ:
-            return_value = 1
-            span.set_attribute(f"entity.{span_index}.type", f"app_hosting.{type_name}")
-            entity_name_env = service_name_map.get(type_name, "unknown")
-            span.set_attribute(f"entity.{span_index}.name", os.environ.get(entity_name_env, "generic"))
-    return return_value
 
 def set_embedding_model(model_name: str):
     """
@@ -244,42 +130,9 @@ def get_nested_value(data, keys):
             return None
     return data
 
-def get_workflow_name(span: Span) -> str:
-    try:
-        return get_value("workflow_name") or span.resource.attributes.get("service.name")
-    except Exception as e:
-        logger.exception(f"Error getting workflow name: {e}")
-        return None
-
-def get_vectorstore_deployment(my_map):
-    if isinstance(my_map, dict):
-        if '_client_settings' in my_map:
-            client = my_map['_client_settings'].__dict__
-            host, port = get_keys_as_tuple(client, 'host', 'port')
-            if host:
-                return f"{host}:{port}" if port else host
-        keys_to_check = ['client', '_client']
-        host = get_host_from_map(my_map, keys_to_check)
-        if host:
-            return host
-    else:
-        if hasattr(my_map, 'client') and '_endpoint' in my_map.client.__dict__:
-            return my_map.client.__dict__['_endpoint']
-        host, port = get_keys_as_tuple(my_map.__dict__, 'host', 'port')
-        if host:
-            return f"{host}:{port}" if port else host
-    return None
 
 def get_keys_as_tuple(dictionary, *keys):
     return tuple(next((value for key, value in dictionary.items() if key.endswith(k) and value is not None), None) for k in keys)
-
-def get_host_from_map(my_map, keys_to_check):
-    for key in keys_to_check:
-        seed_connections = get_nested_value(my_map, [key, 'transport', 'seed_connections'])
-        if seed_connections and 'host' in seed_connections[0].__dict__:
-            return seed_connections[0].__dict__['host']
-    return None
-
 
 
 class Option(Generic[T]):

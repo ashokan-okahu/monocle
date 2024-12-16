@@ -1,6 +1,8 @@
-from monocle_apptrace.instrumentation.common.utils import get_vectorstore_deployment
+from monocle_apptrace.instrumentation.metamodel.langchain._helper import (
+  extract_vectorstore_deployment,
+)
 
-retrieval={
+RETRIEVAL = {
   "type": "retrieval",
   "attributes": [
     [
@@ -15,7 +17,7 @@ retrieval={
       },
       {
         "attribute": "deployment",
-        "accessor": lambda arguments: get_vectorstore_deployment(arguments['instance'].vectorstore.__dict__)
+        "accessor": lambda arguments: extract_vectorstore_deployment(arguments['instance'].vectorstore.__dict__)
       }
     ],
     [

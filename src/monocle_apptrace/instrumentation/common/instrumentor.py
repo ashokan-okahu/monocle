@@ -13,9 +13,8 @@ from wrapt import wrap_function_wrapper
 
 from monocle_apptrace.exporters.monocle_exporters import get_monocle_exporter
 from monocle_apptrace.instrumentation.common.span_handler import SpanHandler
-from monocle_apptrace.instrumentation.common.utils import process_wrapper_method_config
 from monocle_apptrace.instrumentation.common.wrapper_method import (
-    INBUILT_METHODS_LIST,
+    DEFAULT_METHODS_LIST,
     WrapperMethod,
 )
 
@@ -50,39 +49,36 @@ class MonocleInstrumentor(BaseInstrumentor):
         tracer_provider: TracerProvider = kwargs.get("tracer_provider")
         tracer = get_tracer(instrumenting_module_name="monocle_apptrace", tracer_provider=tracer_provider)
 
-        user_method_list = []
+        final_method_list = []
+        if self.union_with_default_methods is True:
+            final_method_list= final_method_list + DEFAULT_METHODS_LIST
+
         for method in self.user_wrapper_methods:
             if isinstance(method, dict):
-                user_method_list.append(method)
+                final_method_list.append(method)
             elif isinstance(method, WrapperMethod):
-                process_wrapper_method_config(method)
-                user_method_list.append(method.to_dict())
-                
-        final_method_list = user_method_list
-        if self.union_with_default_methods is True:
-            final_method_list = final_method_list + INBUILT_METHODS_LIST
-
-        for wrapped_method in final_method_list:
+                final_method_list.append(method.to_dict())
+        
+        for method_config in final_method_list:
+            target_package = method_config.get("package", None)
+            target_object = method_config.get("object", None)
+            target_method = method_config.get("method", None)
+            wrapped_by = method_config.get("wrapper_method", None)
+            #get the requisite handler or default one
+            handler_key = method_config.get("span_handler",'default')
             try:
-                wrap_package = wrapped_method.get("package")
-                wrap_object = wrapped_method.get("object")
-                wrap_method = wrapped_method.get("method")
-                wrapper = wrapped_method.get("wrapper")
-                #get the requisite handler or default one
-                handler_key = wrapped_method.get("span_handler",'default')
                 handler =  self.handlers.get(handler_key)
                 wrap_function_wrapper(
-                    wrap_package,
-                    f"{wrap_object}.{wrap_method}" if wrap_object else wrap_method,
-                    wrapper(tracer, handler, wrapped_method),
+                    target_package,
+                    f"{target_object}.{target_method}" if target_object else target_method,
+                    wrapped_by(tracer, handler, method_config),
                 )
-                self.instrumented_method_list.append(wrapped_method)
+                self.instrumented_method_list.append(method_config)
             except Exception as ex:
-                if wrapped_method in user_method_list:
-                    logger.error(f"""_instrument wrap Exception: {str(ex)}
-                                for package: {wrap_package},
-                                object:{wrap_object},
-                                method:{wrap_method}""")
+                logger.error(f"""_instrument wrap Exception: {str(ex)}
+                            for package: {target_package},
+                            object:{target_object},
+                            method:{target_method}""")
 
     def _uninstrument(self, **kwargs):
         for wrapped_method in self.instrumented_method_list:

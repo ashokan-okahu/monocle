@@ -1,27 +1,9 @@
-
-import inspect
 import logging
 
+from opentelemetry.context import get_value
 from opentelemetry.sdk.trace import Span
 
-from monocle_apptrace.instrumentation.common.utils import get_workflow_name
-
 logger = logging.getLogger(__name__)
-WORKFLOW_TYPE_KEY = "workflow_type"
-DATA_INPUT_KEY = "data.input"
-DATA_OUTPUT_KEY = "data.output"
-PROMPT_INPUT_KEY = "data.input"
-PROMPT_OUTPUT_KEY = "data.output"
-QUERY = "input"
-RESPONSE = "response"
-
-INFRA_SERVICE_KEY = "infra_service_name"
-
-TYPE = "type"
-PROVIDER = "provider_name"
-EMBEDDING_MODEL = "embedding_model"
-VECTOR_STORE = 'vector_store'
-META_DATA = 'metadata'
 
 WORKFLOW_TYPE_MAP = {
     "llama_index": "workflow.llamaindex",
@@ -102,9 +84,6 @@ class SpanHandler:
                         accessor = attribute.get("accessor")
                         if accessor:
                             try:
-                                # signature = inspect.signature(accessor)
-                                # for keyword, value in arguments.items():
-                                #     if  keyword in signature.parameters:
                                 event_attributes[attribute_key] = accessor(arguments)
                             except Exception as e:
                                 logger.error(f"Error evaluating accessor for attribute '{attribute_key}': {e}")
@@ -113,7 +92,7 @@ class SpanHandler:
 
     def set_workflow_attributes(self, to_wrap, span: Span, span_index):
         return_value = 1
-        workflow_name = get_workflow_name(span=span)
+        workflow_name = self.get_workflow_name(span=span)
         if workflow_name:
             span.set_attribute("span.type", "workflow")
             span.set_attribute(f"entity.{span_index}.name", workflow_name)
@@ -128,6 +107,12 @@ class SpanHandler:
             span.set_attribute(f"entity.{span_index}.type", "workflow.generic")
         return return_value
 
+    def get_workflow_name(self, span: Span) -> str:
+        try:
+            return get_value("workflow_name") or span.resource.attributes.get("service.name")
+        except Exception as e:
+            logger.exception(f"Error getting workflow name: {e}")
+            return None
 
     def __is_root_span(self, curr_span: Span) -> bool:
         return curr_span.parent is None
