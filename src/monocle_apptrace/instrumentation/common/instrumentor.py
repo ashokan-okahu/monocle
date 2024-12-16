@@ -1,5 +1,5 @@
 import logging
-from typing import Collection, Dict, List
+from typing import Collection, Dict, List, Union
 
 from opentelemetry import trace
 from opentelemetry.context import attach, get_value, set_value
@@ -12,9 +12,12 @@ from opentelemetry.trace import get_tracer
 from wrapt import wrap_function_wrapper
 
 from monocle_apptrace.exporters.monocle_exporters import get_monocle_exporter
-from monocle_apptrace.span_handler import SpanHandler
-from monocle_apptrace.utils import process_wrapper_method_config
-from monocle_apptrace.wrapper import INBUILT_METHODS_LIST, WrapperMethod
+from monocle_apptrace.instrumentation.common.span_handler import SpanHandler
+from monocle_apptrace.instrumentation.common.utils import process_wrapper_method_config
+from monocle_apptrace.instrumentation.common.wrapper_method import (
+    INBUILT_METHODS_LIST,
+    WrapperMethod,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +27,20 @@ _instruments = ()
 
 class MonocleInstrumentor(BaseInstrumentor):
     workflow_name: str = ""
-    user_wrapper_methods: list[WrapperMethod] = []
+    user_wrapper_methods: list[Union[dict,WrapperMethod]] = []
     instrumented_method_list: list[object] = []
     handlers:Dict[str,SpanHandler] = {} # dict of handlers
+    union_with_default_methods: bool = False
 
     def __init__(
             self,
             handlers,
-            user_wrapper_methods: list[WrapperMethod] = None) -> None:
+            user_wrapper_methods: list[Union[dict,WrapperMethod]] = None,
+            union_with_default_methods: bool = True
+            ) -> None:
         self.user_wrapper_methods = user_wrapper_methods or []
         self.handlers = handlers or {'default':SpanHandler()}
+        self.union_with_default_methods = union_with_default_methods
         super().__init__()
 
     def instrumentation_dependencies(self) -> Collection[str]:
@@ -43,17 +50,17 @@ class MonocleInstrumentor(BaseInstrumentor):
         tracer_provider: TracerProvider = kwargs.get("tracer_provider")
         tracer = get_tracer(instrumenting_module_name="monocle_apptrace", tracer_provider=tracer_provider)
 
-        user_method_list = [
-            {
-                "package": method.package,
-                "object": method.object,
-                "method": method.method,
-                "span_name": method.span_name,
-                "wrapper": method.wrapper,
-                "output_processor": method.output_processor
-            } for method in self.user_wrapper_methods]
-        process_wrapper_method_config(user_method_list)
-        final_method_list = user_method_list + INBUILT_METHODS_LIST
+        user_method_list = []
+        for method in self.user_wrapper_methods:
+            if isinstance(method, dict):
+                user_method_list.append(method)
+            elif isinstance(method, WrapperMethod):
+                process_wrapper_method_config(method)
+                user_method_list.append(method.to_dict())
+                
+        final_method_list = user_method_list
+        if self.union_with_default_methods is True:
+            final_method_list = final_method_list + INBUILT_METHODS_LIST
 
         for wrapped_method in final_method_list:
             try:
@@ -97,7 +104,8 @@ def setup_monocle_telemetry(
         workflow_name: str,
         span_processors: List[SpanProcessor] = None,
         span_handlers: Dict[str,SpanHandler] = None,
-        wrapper_methods: List[WrapperMethod] = None):
+        wrapper_methods: List[Union[dict,WrapperMethod]] = None,
+        union_with_default_methods: bool = True) -> None:
     resource = Resource(attributes={
         SERVICE_NAME: workflow_name
     })
@@ -116,7 +124,7 @@ def setup_monocle_telemetry(
     if is_proxy_provider:
         trace.set_tracer_provider(trace_provider)
     instrumentor = MonocleInstrumentor(user_wrapper_methods=wrapper_methods or [], 
-                                       handlers=span_handlers)
+                                       handlers=span_handlers, union_with_default_methods = union_with_default_methods)
     # instrumentor.app_name = workflow_name
     if not instrumentor.is_instrumented_by_opentelemetry:
         instrumentor.instrument(trace_provider=trace_provider)

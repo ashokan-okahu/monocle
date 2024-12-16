@@ -3,8 +3,8 @@ import logging
 
 from opentelemetry.trace import Tracer
 
-from monocle_apptrace.span_handler import SpanHandler
-from monocle_apptrace.utils import (
+from monocle_apptrace.instrumentation.common.span_handler import SpanHandler
+from monocle_apptrace.instrumentation.common.utils import (
     get_fully_qualified_class_name,
     with_tracer_wrapper,
 )

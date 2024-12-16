@@ -1,4 +1,4 @@
-from monocle_apptrace.utils import get_vectorstore_deployment
+from monocle_apptrace.instrumentation.common.utils import get_vectorstore_deployment
 
 retrieval={
   "type": "retrieval",

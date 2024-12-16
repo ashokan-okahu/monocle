@@ -4,7 +4,7 @@ import logging
 
 from opentelemetry.sdk.trace import Span
 
-from monocle_apptrace.utils import get_workflow_name
+from monocle_apptrace.instrumentation.common.utils import get_workflow_name
 
 logger = logging.getLogger(__name__)
 WORKFLOW_TYPE_KEY = "workflow_type"
@@ -102,10 +102,10 @@ class SpanHandler:
                         accessor = attribute.get("accessor")
                         if accessor:
                             try:
-                                signature = inspect.signature(accessor)
-                                for keyword, value in arguments.items():
-                                    if  keyword in signature.parameters:
-                                        event_attributes[attribute_key] = accessor(value)
+                                # signature = inspect.signature(accessor)
+                                # for keyword, value in arguments.items():
+                                #     if  keyword in signature.parameters:
+                                event_attributes[attribute_key] = accessor(arguments)
                             except Exception as e:
                                 logger.error(f"Error evaluating accessor for attribute '{attribute_key}': {e}")
                     span.add_event(name=event_name, attributes=event_attributes)

@@ -6,7 +6,11 @@ and assistant messages from various input formats.
 import logging
 from urllib.parse import urlparse
 
-from monocle_apptrace.utils import Option, get_attribute, try_option
+from monocle_apptrace.instrumentation.common.utils import (
+    Option,
+    get_attribute,
+    try_option,
+)
 
 DATA_INPUT_KEY = "data.input"
 
@@ -87,7 +91,7 @@ def extract_provider_name(instance):
     
     return provider_url.unwrap_or(None)
 
-# to be validated for non-langchain 
+# to be validated for non-langchain use cases
 def extract_inference_endpoint(instance):
     inference_endpoint: Option[str] = try_option(getattr, instance.client._client, 'base_url').map(str)
     if inference_endpoint.is_none():

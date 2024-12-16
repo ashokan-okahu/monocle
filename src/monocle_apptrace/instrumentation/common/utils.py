@@ -10,7 +10,10 @@ from opentelemetry.context import attach, detach, get_current, get_value, set_va
 from opentelemetry.trace import NonRecordingSpan, Span
 from opentelemetry.trace.propagation import _SPAN_KEY
 
-from monocle_apptrace.constants import service_name_map, service_type_map
+from monocle_apptrace.instrumentation.common.constants import (
+    service_name_map,
+    service_type_map,
+)
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -127,7 +130,7 @@ def get_wrapper_methods_config(
     parent_dir = os.path.dirname(os.path.join(os.path.dirname(__file__), '..'))
     wrapper_methods_config = load_wrapper_methods_config_from_file(
         wrapper_methods_config_path=os.path.join(parent_dir, wrapper_methods_config_path))
-    process_wrapper_method_config(
+    process_wrapper_methods_config(
         wrapper_methods_config=wrapper_methods_config,
         attributes_config_base_path=attributes_config_base_path)
     return wrapper_methods_config
@@ -141,10 +144,15 @@ def load_wrapper_methods_config_from_file(
 
     return json_data["wrapper_methods"]
 
-def process_wrapper_method_config(
-        wrapper_methods_config: str,
-        attributes_config_base_path: str = ""):
+def process_wrapper_methods_config( wrapper_methods_config: list, attributes_config_base_path: str = ""):
     for wrapper_method in wrapper_methods_config:
+        process_wrapper_method_config(
+            wrapper_method=wrapper_method,
+            attributes_config_base_path=attributes_config_base_path)
+    
+def process_wrapper_method_config(
+        wrapper_method: dict,
+        attributes_config_base_path: str = ""):
         if "wrapper_package" in wrapper_method and "wrapper_method" in wrapper_method:
             wrapper_method["wrapper"] = get_wrapper_method(
                 wrapper_method["wrapper_package"], wrapper_method["wrapper_method"])
@@ -156,7 +164,7 @@ def process_wrapper_method_config(
             load_output_processor(wrapper_method, attributes_config_base_path)
 
 def get_wrapper_method(package_name: str, method_name: str):
-    wrapper_module = import_module("monocle_apptrace." + package_name)
+    wrapper_module = import_module("monocle_apptrace.instrumentation.common." + package_name)
     return getattr(wrapper_module, method_name)
 
 def set_app_hosting_identifier_attribute(span, span_index):
