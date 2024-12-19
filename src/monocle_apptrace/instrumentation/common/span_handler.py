@@ -1,5 +1,6 @@
 import logging
 import os
+from importlib.metadata import version
 
 from opentelemetry.context import get_value
 from opentelemetry.sdk.trace import Span
@@ -23,7 +24,12 @@ class SpanHandler:
         pass
 
     def pre_task_processing(self, to_wrap, wrapped, instance, args, span):
-        pass
+        if self.__is_root_span(span):
+            try:
+                sdk_version = version("monocle_apptrace")
+                span.set_attribute("monocle_apptrace.version", sdk_version)
+            except Exception as e:
+                logger.warning("Exception finding monocle-apptrace version.")
 
     def post_task_processing(self, to_wrap, wrapped, instance, args, kwargs):
         pass
@@ -33,6 +39,11 @@ class SpanHandler:
 
 
     def hydrate_span(self, to_wrap, wrapped, instance, args, kwargs, result, span):
+        if 'output_processor' in to_wrap:    
+            output_processor=to_wrap['output_processor']
+            if output_processor.get('type') == 'workflow' and not self.__is_root_span(span):
+                return
+
         self.hydrate_attributes(to_wrap, wrapped, instance, args, kwargs, result, span)
         self.hydrate_events(to_wrap, wrapped, instance, args, kwargs, result, span)
 
@@ -46,7 +57,7 @@ class SpanHandler:
         if 'output_processor' in to_wrap:    
             output_processor=to_wrap['output_processor']
             if 'type' in output_processor:
-                        span.set_attribute("span.type", output_processor['type'])
+                span.set_attribute("span.type", output_processor['type'])
             else:
                 logger.warning("type of span not found or incorrect written in entity json")
             if 'attributes' in output_processor:

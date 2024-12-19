@@ -1,9 +1,12 @@
 from monocle_apptrace.instrumentation.common.wrapper import atask_wrapper, task_wrapper
-from monocle_apptrace.instrumentation.metamodel.langchain.inference import (
+from monocle_apptrace.instrumentation.metamodel.langchain.entities.inference import (
     INFERENCE,
 )
-from monocle_apptrace.instrumentation.metamodel.langchain.retrieval import (
+from monocle_apptrace.instrumentation.metamodel.langchain.entities.retrieval import (
     RETRIEVAL,
+)
+from monocle_apptrace.instrumentation.metamodel.langchain.workflow import (
+    WORKFLOW,
 )
 
 LANGCHAIN_METHODS = [
@@ -93,21 +96,24 @@ LANGCHAIN_METHODS = [
         "object": "RunnableSequence",
         "method": "invoke",
         "span_name": "langchain.workflow",
-        "wrapper_method": task_wrapper
+        "wrapper_method": task_wrapper,
+        "output_processor": WORKFLOW
     },
     {
         "package": "langchain.schema.runnable",
         "object": "RunnableSequence",
         "method": "ainvoke",
         "span_name": "langchain.workflow",
-        "wrapper_method": atask_wrapper
+        "wrapper_method": atask_wrapper,
+        "output_processor": WORKFLOW
     },
     {
         "package": "langchain.schema.runnable",
         "object": "RunnableParallel",
         "method": "invoke",
         "span_name": "langchain.workflow",
-        "wrapper_method": task_wrapper
+        "wrapper_method": task_wrapper,
+        "output_processor": WORKFLOW
 
     },
     {
@@ -116,5 +122,6 @@ LANGCHAIN_METHODS = [
         "method": "ainvoke",
         "span_name": "langchain.workflow",
         "wrapper_method": atask_wrapper,
+        "output_processor": WORKFLOW
     }
 ]

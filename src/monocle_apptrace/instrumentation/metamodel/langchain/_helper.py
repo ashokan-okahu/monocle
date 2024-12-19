@@ -3,6 +3,7 @@ This module provides utility functions for extracting system, user,
 and assistant messages from various input formats.
 """
 
+import json
 import logging
 from urllib.parse import urlparse
 
@@ -95,3 +96,24 @@ def resolve_from_alias(my_map, alias):
         if i in my_map.keys():
             return my_map[i]
     return None
+
+def extract_prompt_input(args):
+    input_arg_text = args[0]
+    if isinstance(input_arg_text, str):
+        return input_arg_text
+    elif isinstance(input_arg_text, list):
+        return', '.join([json.dumps(item) for item in input_arg_text])
+    elif isinstance(input_arg_text, dict):
+         return  json.dumps(input_arg_text)
+
+
+def extract_prompt_output(result):
+    if isinstance(result, str):
+        return result
+    if isinstance(result, list):
+        return', '.join([json.dumps(item) for item in result])
+    elif isinstance(result, dict):
+        return  json.dumps(result)
+    
+def is_root_span(curr_span) -> bool:
+    return curr_span.parent is None
