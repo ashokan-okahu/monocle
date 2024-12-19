@@ -1,4 +1,4 @@
-from metamodel.metachain.inference import (
+from metamodel.metachain.entities.inference import (
     INFERENCE,
 )
 
