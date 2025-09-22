@@ -23,7 +23,7 @@ dependencies = [
    'opentelemetry-api>=1.21.0',
    'opentelemetry-sdk>=1.21.0',
    'opentelemetry-instrumentation',
-   'mcp>=1.13.1',
+   'mcp>=1.12.1',
    'pydantic>=2.11.7',
    'click==8.2.1'
 ]
@@ -98,8 +98,11 @@ dev = [
   'python-dotenv>=1.1.0',
   'langchain-google-genai==2.1.8',
   'google-adk==1.10.0',
-  'google-generativeai==0.8.5',
-  'openai-agents==0.2.6'
+  # 'google-generativeai==0.8.5',
+  'openai-agents==0.2.6',
+  'azure-ai-inference>=1.0.0b4',
+  'langfuse>=2.60.7',
+  'litellm>=1.50.0'
 ]
 
 azure = [
