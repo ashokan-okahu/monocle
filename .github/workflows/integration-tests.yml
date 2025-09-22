@@ -2,9 +2,11 @@ name: Monocle Integration Tests
 
 on:
   push:
-    branches: [ "monocle-tests" ]
+    branches:
+      - "main"
   pull_request:
-    branches: [ "monocle-tests" ]
+    branches:
+      - "main"
   workflow_dispatch:
 
 env:
@@ -21,11 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        id: checkout
         uses: actions/checkout@v5
-        with:
-          repository: 'ashokan-okahu/monocle'
-          ref: 'monocle-tests'
 
       - name: Set up Python
         uses: actions/setup-python@v5
