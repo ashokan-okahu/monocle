@@ -53,6 +53,8 @@ def get_vector_store() -> Collection:
     #     vector_store = setup_embedding(chroma_client)
     except ValueError as ex:
         vector_store = setup_embedding(chroma_client)
+    except chromadb.errors.NotFoundError as ex:
+        vector_store = setup_embedding(chroma_client)
     return vector_store
 
 @pytest.mark.integration()
