@@ -22,7 +22,10 @@ jobs:
     steps:
       - name: Checkout repository
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          repository: 'ashokan-okahu/monocle'
+          ref: 'monocle-tests'
 
       - name: Set up Python
         uses: actions/setup-python@v5
