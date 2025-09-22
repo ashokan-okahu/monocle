@@ -2,9 +2,9 @@ name: Monocle Integration Tests
 
 on:
   push:
-    branches: [ "monocle-test" ]
+    branches: [ "monocle-tests" ]
   pull_request:
-    branches: [ "monocle-test" ]
+    branches: [ "monocle-tests" ]
   workflow_dispatch:
 
 env:
