@@ -59,8 +59,8 @@ def test_bedrock_opensearch(setup):
             assert span_attributes["entity.1.type"] == "inference.aws_bedrock"
             if "entity.1.inference_endpoint" in span_attributes.keys():
                 assert "entity.1.inference_endpoint" in span_attributes
-                assert span_attributes["entity.2.name"] == "anthropic.claude-v2:1"
-                assert span_attributes["entity.2.type"] == "model.llm.anthropic.claude-v2:1"
+                assert span_attributes["entity.2.name"] == "ai21.jamba-1-5-mini-v1:0"
+                assert span_attributes["entity.2.type"] == "model.llm.ai21.jamba-1-5-mini-v1:0"
 
 
                 # Assertions for metadata
@@ -76,7 +76,8 @@ def produce_llm_response(query,similar_documents):
 
     # Set the model ID, e.g., Jurassic-2 Mid.
     #model_id = "ai21.j2-mid-v1"
-    model_id = "anthropic.claude-v2:1"
+    #model_id = "anthropic.claude-v2:1"
+    model_id = "ai21.jamba-1-5-mini-v1:0"
 
     context = build_context(similar_documents)
     user_message = f'Context - {context}\nBased on the above context, answer this Query: {query}'
