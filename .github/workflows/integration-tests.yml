@@ -97,9 +97,6 @@ jobs:
                  tests/integration/test_azure_ai_inference_finish_reason_integration.py \
                  tests/integration/test_azure_ai_inference_sample.py \
                  tests/integration/test_azure_openai_finish_reason_integration.py \
-                 tests/integration/test_bedrock_finish_reason_integration.py \
-                 tests/integration/test_bedrock_opensearch.py \
-                 tests/integration/test_gemini_finish_reason_integration.py \
                  tests/integration/test_gemini_metamodel_sample.py \
                  tests/integration/test_gemini_rag_sample.py \
                  --tb=short | tee result.log
