@@ -71,7 +71,7 @@ def test_finish_reason_max_tokens():
     
     response = client.models.generate_content(
         model=MODEL,
-        config=types.GenerateContentConfig(max_output_tokens=1),
+        config=types.GenerateContentConfig(max_output_tokens=5),
         contents="Tell me a long story about a dragon."
     )
     
