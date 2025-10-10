@@ -196,6 +196,7 @@ jobs:
           from: ${{ secrets.EMAIL_FROM || 'noreply@github.com' }}
           attachments: test_summary.txt,failed_files.txt
           secure: true
+          ignore_cert: true
           
       - name: Send Email Notification (Failure Backup)
         if: failure() && steps.run-tests.conclusion != 'success'
@@ -218,3 +219,4 @@ jobs:
           to: ${{ secrets.EMAIL_TO }}
           from: ${{ secrets.EMAIL_FROM || 'noreply@github.com' }}
           secure: true
+          ignore_cert: true
