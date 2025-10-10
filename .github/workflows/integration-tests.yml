@@ -186,15 +186,33 @@ jobs:
       - name: Send Email Notification
         if: always()
         uses: dawidd6/action-send-mail@v6
+        continue-on-error: true
         with:
-          server_address: smtp.office365.com
-          server_port: 465
+          server_address: smtp.gmail.com
+          server_port: 587
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Monocle Integration Test Results - Gmail"
+          body: file://email_body.txt
+          to: ${{ secrets.EMAIL_TO }}
+          from: ${{ secrets.EMAIL_FROM || 'no-reply@github.com' }}
+          attachments: test_summary.txt,failed_files.txt
+          secure: true
+          priority: normal
+
+      - name: Send Email Notification (Fallback)
+        if: always()
+        uses: dawidd6/action-send-mail@v6
+        continue-on-error: true
+        with:
+          server_address: smtp-office365.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
           subject: "Monocle Integration Test Results"
           body: file://email_body.txt
           to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_FROM || 'noreply@github.com' }}
+          from: ${{ secrets.EMAIL_FROM || 'ashokan.perumal@okahu.ai' }}
           attachments: test_summary.txt,failed_files.txt
           secure: true
           ignore_cert: true
@@ -203,10 +221,10 @@ jobs:
         if: failure() && steps.run-tests.conclusion != 'success'
         uses: dawidd6/action-send-mail@v6
         with:
-          server_address: smtp.office365.com
+          server_address: smtp.gmail.com
           server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
           subject: "🚨 Monocle Integration Tests - Workflow Failed"
           body: |
             The Monocle integration test workflow encountered an error and could not complete successfully.
@@ -218,6 +236,6 @@ jobs:
             
             Please check the workflow logs for more details.
           to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_FROM || 'noreply@github.com' }}
-          secure: false
-          ignore_cert: true
+          from: ${{ secrets.EMAIL_FROM || 'ashokan.perumal@okahu.ai' }}
+          secure: true
+          priority: normal
