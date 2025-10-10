@@ -187,7 +187,7 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp-mail.outlook.com
+          server_address: smtp.office365.com
           server_port: 587
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
@@ -203,7 +203,7 @@ jobs:
         if: failure() && steps.run-tests.conclusion != 'success'
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp-mail.outlook.com
+          server_address: smtp.office365.com
           server_port: 587
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
