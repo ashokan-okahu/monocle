@@ -16,7 +16,7 @@ jobs:
         server_port: 587
         secure: false
         username: okahuashokan@gmail.com
-        password: ${{ secrets.GMAIL_APP_PASSWORD }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
         from: okahuashokan@gmail.com
@@ -119,7 +119,35 @@ jobs:
         server_port: 587
         secure: false
         username: Github Actions
-        password: ${{ secrets.GMAIL_APP_PASSWORD }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: okahuashokan@gmail.com
+        body: This is a test email sent from a GitHub Action workflow.
+
+    
+    - name: Send Email
+      uses: hilarion5/send-mail@v9
+      with:
+        smtp-server: smtp.gmail.com
+        smtp-port: 465
+        smtp-secure: true
+        from-email: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        to-email: ashokan.perumal@okahu.ai
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+        subject: "GitHub Actions Notification"
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email Notification v10
+      if: always()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        secure: false
+        username: okahuashokan@gmail.com
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
         from: okahuashokan@gmail.com
