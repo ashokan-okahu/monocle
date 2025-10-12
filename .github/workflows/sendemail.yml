@@ -127,7 +127,7 @@ jobs:
 
     
     - name: Send Email
-      uses: hilarion5/send-mail@v9
+      uses: hilarion5/send-mail@v1
       with:
         smtp-server: smtp.gmail.com
         smtp-port: 465
