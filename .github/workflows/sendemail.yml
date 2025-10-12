@@ -15,11 +15,11 @@ jobs:
         server_address: smtp.gmail.com
         server_port: 587
         secure: false
-        username: ${{ secrets.GMAIL_USERNAME }}
+        username: okahuashokan@gmail.com
         password: ${{ secrets.GMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        from: okahuashokan@gmail.com
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email Notification v2
@@ -43,6 +43,7 @@ jobs:
         server_address: smtp.office365.com
         server_port: 465
         secure: true
+        ignore_cert: false
         username: okahugithub
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
@@ -71,6 +72,7 @@ jobs:
         server_address: smtp.office365.com
         server_port: 465
         secure: true
+        ignore_cert: false
         username: prasad@okahu.ai
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
@@ -85,28 +87,29 @@ jobs:
         server_address: smtp.office365.com
         server_port: 465
         secure: true
+        ignore_cert: false
         username: okahugithub
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
         from: ashokan.perumal@okahu.ai
         body: This is a test email sent from a GitHub Action workflow.
-        ignore_cert: true
 
     - name: Send Email Notification v7
       if: always()
       uses: dawidd6/action-send-mail@v6
       with:
-        server_address: smtp.office365.com
+        server_address: smtp-mail.outlook.com
         server_port: 465
         secure: true
+        ignore_cert: false
         username: prasad@okahu.ai
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
         from: ashokan.perumal@okahu.ai
         body: This is a test email sent from a GitHub Action workflow.
-        ignore_cert: true
+
 
     - name: Send Email Notification v8
       if: always()
@@ -119,7 +122,7 @@ jobs:
         password: ${{ secrets.GMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        from: okahuashokan@gmail.com
         body: This is a test email sent from a GitHub Action workflow.
 
 
