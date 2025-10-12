@@ -213,6 +213,8 @@ jobs:
           body: "Sample text body"
           to: ${{ secrets.EMAIL_TO }}
           from: "no-reply@github.com"
+          secure: true
+          priority: normal
 
 
       - name: Send Email Notification (Fallback)
