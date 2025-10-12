@@ -10,59 +10,58 @@ jobs:
 
     - name: Send Email Notification v1
       if: always()
-      uses: dawidd6/action-send-mail@v3
+      uses: hilarion5/send-mail@v1
       with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        secure: false
-        username: okahuashokan@gmail.com
+        smtp-server: smtp.gmail.com
+        smtp-port: 465
+        smtp-secure: true
+        from-email: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        to-email: ${{ secrets.EMAIL_TO }}
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
         password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
-        subject: Github Actions job result
-        to: okahuashokan@gmail.com, ashokan.perumal@okahu.ai
-        from: okahuashokan@gmail.com
+        subject: "GitHub Actions Notification"
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email Notification v2
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: smtp.office365.com
-        server_port: 587
-        secure: false
-        username: okahugithub
-        password: ${{ secrets.EMAIL_PASSWORD }}
+        server_address: smtp.gmail.com
+        server_port: 465
+        secure: true
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
         subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        to: ${{ secrets.EMAIL_TO }}
+        from: ${{ secrets.OKAHUGMAIL_USERNAME }}
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email Notification v3
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: smtp.office365.com
-        server_port: 465
-        secure: true
-        ignore_cert: false
-        username: okahugithub
-        password: ${{ secrets.EMAIL_PASSWORD }}
+        server_address: smtp.gmail.com
+        server_port: 587
+        secure: false
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
         subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        to: ${{ secrets.EMAIL_TO }}
+        from: ${{ secrets.OKAHUGMAIL_USERNAME }}
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email Notification v4
       if: always()
-      uses: dawidd6/action-send-mail@v3
+      uses: hilarion5/send-mail@v1
       with:
-        server_address: smtp.office365.com
-        server_port: 587
-        secure: false
+        smtp-server: smtp.office365.com
+        smtp-port: 465
+        smtp-secure: true
+        from-email: prasad@okahu.ai
+        to-email: ${{ secrets.EMAIL_TO }}
         username: prasad@okahu.ai
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        subject: "GitHub Actions Notification"
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email Notification v5
@@ -72,23 +71,21 @@ jobs:
         server_address: smtp.office365.com
         server_port: 465
         secure: true
-        ignore_cert: false
         username: prasad@okahu.ai
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
+        to: ${{ secrets.EMAIL_TO }}
         from: ashokan.perumal@okahu.ai
         body: This is a test email sent from a GitHub Action workflow.
-
+    
     - name: Send Email Notification v6
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.office365.com
-        server_port: 465
-        secure: true
-        ignore_cert: false
-        username: okahugithub
+        server_port: 587
+        secure: false
+        username: prasad@okahu.ai
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
@@ -97,35 +94,47 @@ jobs:
 
     - name: Send Email Notification v7
       if: always()
-      uses: dawidd6/action-send-mail@v3
+      uses: hilarion5/send-mail@v1
       with:
-        server_address: smtp-mail.outlook.com
-        server_port: 465
-        secure: true
-        ignore_cert: false
-        username: prasad@okahu.ai
+        smtp-server: smtp.office365.com
+        smtp-port: 465
+        smtp-secure: true
+        from-email: ${{ secrets.EMAIL_TO }}
+        to-email: ${{ secrets.EMAIL_TO }}
+        username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        subject: "GitHub Actions Notification"
         body: This is a test email sent from a GitHub Action workflow.
-
 
     - name: Send Email Notification v8
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        secure: false
-        username: Github Actions
-        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+        server_address: smtp.office365.com
+        server_port: 465
+        secure: true
+        ignore_cert: false
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
-        from: okahuashokan@gmail.com
+        to: ${{ secrets.EMAIL_TO }}
+        from: ${{ secrets.EMAIL_TO }}
         body: This is a test email sent from a GitHub Action workflow.
 
-    
+    - name: Send Email Notification v9
+      if: always()
+      uses: hilarion5/send-mail@v1
+      with:
+        smtp-server: smtp-mail.outlook.com
+        smtp-port: 465
+        smtp-secure: true
+        from-email: ${{ secrets.EMAIL_TO }}
+        to-email: ${{ secrets.EMAIL_TO }}
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "GitHub Actions Notification"
+        body: This is a test email sent from a GitHub Action workflow.
+
     - name: Send Email
       if: always()
       uses: hilarion5/send-mail@v1
@@ -133,7 +142,7 @@ jobs:
         smtp-server: smtp.gmail.com
         smtp-port: 465
         smtp-secure: true
-        from-email: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        from-email: ashokan.perumal@okahu.ai
         to-email: ashokan.perumal@okahu.ai
         username: ${{ secrets.OKAHUGMAIL_USERNAME }}
         password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
@@ -147,11 +156,11 @@ jobs:
         server_address: smtp.gmail.com
         server_port: 587
         secure: false
-        username: okahuashokan@gmail.com
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
         password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
-        from: okahuashokan@gmail.com
+        from: ashokan.perumal@okahu.ai
         body: This is a test email sent from a GitHub Action workflow.
 
 
