@@ -12,14 +12,14 @@ jobs:
       if: always()
       uses: dawidd6/action-send-mail@v6
       with:
-        server_address: smtp.office365.com
+        server_address: smtp.gmail.com
         server_port: 587
         secure: false
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
+        username: ${{ secrets.GMAIL_USERNAME }}
+        password: ${{ secrets.GMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
+        from: ${{ secrets.GMAIL_USERNAME }}
         body: This is a test email sent from a GitHub Action workflow.
   
         
