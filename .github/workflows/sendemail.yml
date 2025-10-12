@@ -8,7 +8,7 @@ jobs:
     - name: Print Hello World
       run: echo "This is a placeholder step to demonstrate email sending."
 
-    - name: Send Email Notification
+    - name: Send Email Notification v1
       if: always()
       uses: dawidd6/action-send-mail@v6
       with:
@@ -21,5 +21,107 @@ jobs:
         to: ashokan.perumal@okahu.ai
         from: ashokan.perumal@okahu.ai
         body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email Notification v2
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.office365.com
+        server_port: 587
+        secure: false
+        username: okahugithub
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email Notification v3
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.office365.com
+        server_port: 465
+        secure: true
+        username: okahugithub
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email Notification v4
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.office365.com
+        server_port: 587
+        secure: false
+        username: prasad@okahu.ai
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email Notification v5
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.office365.com
+        server_port: 465
+        secure: true
+        username: prasad@okahu.ai
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email Notification v6
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.office365.com
+        server_port: 465
+        secure: true
+        username: okahugithub
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+        ignore_cert: true
+
+    - name: Send Email Notification v7
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.office365.com
+        server_port: 465
+        secure: true
+        username: prasad@okahu.ai
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+        ignore_cert: true
+
+    - name: Send Email Notification v8
+      if: always()
+      uses: dawidd6/action-send-mail@v6
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        secure: false
+        username: Github Actions
+        password: ${{ secrets.GMAIL_APP_PASSWORD }}
+        subject: Github Actions job result
+        to: ashokan.perumal@okahu.ai
+        from: ashokan.perumal@okahu.ai
+        body: This is a test email sent from a GitHub Action workflow.
+
+
   
         
