@@ -195,10 +195,25 @@ jobs:
           subject: "Monocle Integration Test Results -- Primary"
           body: file://email_body.txt
           to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_FROM || 'no-reply@github.com' }}
+          from: "ashokan.perumal@okahu.ai"
           attachments: test_summary.txt,failed_files.txt
           secure: true
           priority: normal
+
+      - name: Send Email Notification (Primary 465)
+        if: always()
+        uses: dawidd6/action-send-mail@v6
+        continue-on-error: true
+        with:
+          server_address: smtp-office365.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Monocle Integration Test Results -- Primary 465"
+          body: "Sample text body"
+          to: ${{ secrets.EMAIL_TO }}
+          from: "no-reply@github.com"
+
 
       - name: Send Email Notification (Fallback)
         if: always()
@@ -222,7 +237,7 @@ jobs:
         uses: dawidd6/action-send-mail@v6
         with:
           server_address: smtp.gmail.com
-          server_port: 587
+          server_port: 465
           username: ${{ secrets.OKAHUGMAIL_USERNAME }}
           password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
           subject: "🚨 Monocle Integration Tests - Workflow Failed"
