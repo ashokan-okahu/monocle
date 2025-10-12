@@ -17,9 +17,9 @@ jobs:
         smtp-secure: true
         from-email: ${{ secrets.EMAIL_FROM }}
         to-email: ${{ secrets.EMAIL_TO }}
-        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        username: ashokan.perumal@okahu.ai
         password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
-        subject: "GitHub Actions Notification"
+        subject: GitHub Actions Notification - V1
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email V2
@@ -31,7 +31,7 @@ jobs:
         secure: true
         username: ${{ secrets.OKAHUGMAIL_USERNAME }}
         password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
-        subject: Github Actions job result
+        subject: Github Actions job result V2
         to: ${{ secrets.EMAIL_TO }}
         from: ${{ secrets.EMAIL_FROM }}
         body: This is a test email sent from a GitHub Action workflow.
