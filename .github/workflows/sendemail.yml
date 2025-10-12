@@ -8,6 +8,50 @@ jobs:
     - name: Print Hello World
       run: echo "This is a placeholder step to demonstrate email sending."
 
+    
+    - name: Send Email V1
+      if: always()
+      uses: hilarion5/send-mail@v1
+      with:
+        smtp-server: smtp.gmail.com
+        smtp-port: 465
+        smtp-secure: true
+        from-email: ${{ secrets.EMAIL_FROM }}
+        to-email: ${{ secrets.EMAIL_TO }}
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+        subject: "GitHub Actions Notification"
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email V2
+      if: always()
+      uses: hilarion5/send-mail@v1
+      with:
+        smtp-server: smtp.gmail.com
+        smtp-port: 587
+        smtp-secure: false
+        from-email: ${{ secrets.EMAIL_FROM }}
+        to-email: ${{ secrets.EMAIL_TO }}
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+        subject: "GitHub Actions Notification"
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email V3
+      if: always()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        secure: false
+        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+        subject: Github Actions job result
+        to: ${{ secrets.EMAIL_TO }}
+        from: ${{ secrets.EMAIL_FROMv2 }}
+        body: This is a test email sent from a GitHub Action workflow.
+
+
     - name: Send Email Notification v1
       if: always()
       uses: hilarion5/send-mail@v1
@@ -57,9 +101,9 @@ jobs:
         smtp-server: smtp.office365.com
         smtp-port: 465
         smtp-secure: true
-        from-email: prasad@okahu.ai
+        from-email: ${{ secrets.EMAIL_FROM }}
         to-email: ${{ secrets.EMAIL_TO }}
-        username: prasad@okahu.ai
+        username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: "GitHub Actions Notification"
         body: This is a test email sent from a GitHub Action workflow.
@@ -71,7 +115,7 @@ jobs:
         server_address: smtp.office365.com
         server_port: 465
         secure: true
-        username: prasad@okahu.ai
+        username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
         to: ${{ secrets.EMAIL_TO }}
@@ -85,7 +129,7 @@ jobs:
         server_address: smtp.office365.com
         server_port: 587
         secure: false
-        username: prasad@okahu.ai
+        username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
@@ -134,35 +178,6 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: "GitHub Actions Notification"
         body: This is a test email sent from a GitHub Action workflow.
-
-    - name: Send Email
-      if: always()
-      uses: hilarion5/send-mail@v1
-      with:
-        smtp-server: smtp.gmail.com
-        smtp-port: 465
-        smtp-secure: true
-        from-email: ashokan.perumal@okahu.ai
-        to-email: ashokan.perumal@okahu.ai
-        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
-        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
-        subject: "GitHub Actions Notification"
-        body: This is a test email sent from a GitHub Action workflow.
-
-    - name: Send Email Notification v10
-      if: always()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        secure: false
-        username: ${{ secrets.OKAHUGMAIL_USERNAME }}
-        password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
-        subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
-        from: ashokan.perumal@okahu.ai
-        body: This is a test email sent from a GitHub Action workflow.
-
 
   
         
