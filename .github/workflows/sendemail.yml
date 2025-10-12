@@ -18,7 +18,7 @@ jobs:
         username: okahuashokan@gmail.com
         password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
         subject: Github Actions job result
-        to: ashokan.perumal@okahu.ai
+        to: okahuashokan@gmail.com, ashokan.perumal@okahu.ai
         from: okahuashokan@gmail.com
         body: This is a test email sent from a GitHub Action workflow.
 
@@ -127,6 +127,7 @@ jobs:
 
     
     - name: Send Email
+      if: always()
       uses: hilarion5/send-mail@v1
       with:
         smtp-server: smtp.gmail.com
