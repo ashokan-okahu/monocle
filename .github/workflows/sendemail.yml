@@ -15,8 +15,8 @@ jobs:
         server_address: smtp.gmail.com
         server_port: 465
         secure: true
-        username: ${{secrets.MAIL_USERNAME}}
-        password: ${{secrets.MAIL_PASSWORD}}
+        username: ${{secrets.OKAHUGMAIL_USERNAME}}
+        password: ${{secrets.OKAHUGMAIL_APP_PASSWORD}}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
         from: ashokan.perumal@okahu.ai
