@@ -48,7 +48,7 @@ jobs:
         to-email: ${{ secrets.EMAIL_TO }}
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "GitHub Actions Notification"
+        subject: Github Actions job result v3
         body: This is a test email sent from a GitHub Action workflow.
 
     - name: Send Email V4
@@ -60,9 +60,35 @@ jobs:
         secure: true
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: Github Actions job result
+        subject: Github Actions job result v4
         to: ${{ secrets.EMAIL_TO }}
         from: ${{ secrets.EMAIL_FROM }}
         body: This is a test email sent from a GitHub Action workflow.
     
-        
+    - name: Send Email V5
+      if: always()
+      uses: hilarion5/send-mail@v1
+      with:
+        smtp-server: smtp.office365.com
+        smtp-port: 587
+        smtp-secure: false
+        from-email: ${{ secrets.EMAIL_FROM }}
+        to-email: ${{ secrets.EMAIL_TO }}
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result v5
+        body: This is a test email sent from a GitHub Action workflow.
+
+    - name: Send Email V6
+      if: always()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.office365.com
+        server_port: 587
+        secure: false
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Github Actions job result v6
+        to: ${{ secrets.EMAIL_TO }}
+        from: ${{ secrets.EMAIL_FROM }}
+        body: This is a test email sent from a GitHub Action workflow.       
