@@ -19,7 +19,7 @@ jobs:
         password: ${{ secrets.GMAIL_APP_PASSWORD }}
         subject: Github Actions job result
         to: ashokan.perumal@okahu.ai
-        from: ${{ secrets.GMAIL_USERNAME }}
+        from: ashokan.perumal@okahu.ai
         body: This is a test email sent from a GitHub Action workflow.
   
         
