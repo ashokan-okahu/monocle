@@ -182,77 +182,32 @@ jobs:
           fi
           
           #echo "Attachments: Full test log (result.log)" >> email_body.txt
-
+  
       - name: Send Email Notification
         if: always()
-        uses: dawidd6/action-send-mail@v6
-        continue-on-error: true
-        with:
-          server_address: smtp-office365.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Monocle Integration Test Results -- Primary"
-          body: file://email_body.txt
-          to: ${{ secrets.EMAIL_TO }}
-          from: "ashokan.perumal@okahu.ai"
-          attachments: test_summary.txt,failed_files.txt
-          secure: true
-          priority: normal
-
-      - name: Send Email Notification (Primary 465)
-        if: always()
-        uses: dawidd6/action-send-mail@v6
-        continue-on-error: true
-        with:
-          server_address: smtp-office365.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Monocle Integration Test Results -- Primary 465"
-          body: "Sample text body"
-          to: ${{ secrets.EMAIL_TO }}
-          from: "no-reply@github.com"
-          secure: true
-          priority: normal
-
-
-      - name: Send Email Notification (Fallback)
-        if: always()
-        uses: dawidd6/action-send-mail@v6
-        continue-on-error: true
-        with:
-          server_address: smtp-office365.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Monocle Integration Test Results -- Fallback"
-          body: file://email_body.txt
-          to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_FROM || 'ashokan.perumal@okahu.ai' }}
-          attachments: test_summary.txt,failed_files.txt
-          secure: true
-          ignore_cert: true
-          
-      - name: Send Email Notification (Failure Backup)
-        if: failure() && steps.run-tests.conclusion != 'success'
-        uses: dawidd6/action-send-mail@v6
+        uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 465
+          secure: true
           username: ${{ secrets.OKAHUGMAIL_USERNAME }}
           password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
-          subject: "🚨 Monocle Integration Tests - Workflow Failed"
-          body: |
-            The Monocle integration test workflow encountered an error and could not complete successfully.
-            
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref_name }}
-            Commit: ${{ github.sha }}
-            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            
-            Please check the workflow logs for more details.
+          subject: Monocle Integration Test Results
           to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_FROM || 'ashokan.perumal@okahu.ai' }}
-          secure: true
-          priority: normal
+          from: ${{ secrets.EMAIL_FROM }}
+          body: file://email_body.txt
+          attachments: test_summary.txt,failed_files.txt
+      
+      - name: Send Email Notification V2
+        if: always()
+        uses: hilarion5/send-mail@v1
+        with:
+          smtp-server: smtp.gmail.com
+          smtp-port: 465
+          smtp-secure: true
+          from-email: ${{ secrets.EMAIL_FROM }}
+          to-email: ${{ secrets.EMAIL_TO }}
+          username: ${{ secrets.OKAHUGMAIL_USERNAME }}
+          password: ${{ secrets.OKAHUGMAIL_APP_PASSWORD }}
+          subject: Monocle Integration Test Results V2
+          body: file://email_body.txt
