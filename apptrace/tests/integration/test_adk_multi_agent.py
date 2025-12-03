@@ -154,11 +154,16 @@ def verify_spans(memory_exporter):
 
             # Assertions for metadata
             span_input, span_output, span_metadata = span.events
+            assert "input" in span_input.attributes
+            assert span_input.attributes["input"] is not None and span_input.attributes["input"] != ""
+            assert "response" in span_output.attributes
+            assert span_output.attributes["response"] is not None and span_output.attributes["response"] != ""
             assert "completion_tokens" in span_metadata.attributes
             assert "prompt_tokens" in span_metadata.attributes
             assert "total_tokens" in span_metadata.attributes
+            assert "finish_type" in span_metadata.attributes
+            assert "finish_reason" in span_metadata.attributes
             found_inference = True
-
 
         if (
                 "span.type" in span_attributes
@@ -192,16 +197,9 @@ def verify_spans(memory_exporter):
             elif span_attributes["entity.1.name"] == "book_hotel":
                 found_book_hotel_tool = True
             found_tool = True
-
-        if (
-                "span.type" in span_attributes
-                and span_attributes["span.type"] == "agentic.delegation"
-        ):
-                found_delegation = True
-                assert "entity.1.type" in span_attributes
-                assert span_attributes["entity.1.type"] == "agent.adk"
-                assert "entity.1.from_agent" in span_attributes
-                assert "entity.1.to_agent" in span_attributes
+            span_input, span_output = span.events
+            assert "input" in span_input.attributes
+            assert "response" in span_output.attributes
 
     assert found_inference, "Inference span not found"
     assert found_agent, "Agent span not found"
@@ -213,7 +211,6 @@ def verify_spans(memory_exporter):
     assert found_book_hotel_delegation, "Book hotel delegation span not found"
     assert found_book_flight_tool, "Book flight tool span not found"
     assert found_book_hotel_tool, "Book hotel tool span not found"
-    assert found_delegation, "Delegation span not found"
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s", "--tb=short"])

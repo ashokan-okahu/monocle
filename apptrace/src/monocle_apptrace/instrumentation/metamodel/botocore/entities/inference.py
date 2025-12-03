@@ -15,6 +15,10 @@ INFERENCE = {
             {
                 "attribute": "inference_endpoint",
                 "accessor": lambda arguments: arguments['instance'].meta.endpoint_url
+            },
+            {
+                "attribute": "provider_name",
+                "accessor": lambda arguments: _helper.extract_provider_name(arguments['instance'])
             }
         ],
         [
@@ -29,6 +33,20 @@ INFERENCE = {
                 "accessor": lambda arguments: 'model.llm.' + _helper.resolve_from_alias(arguments['kwargs'],
                                                                                         ['EndpointName', 'modelId'])
             }
+        ],
+        [
+            {
+                "_comment": "Tool name when finish_type is tool_call",
+                "attribute": "name",
+                "phase": "post_execution",
+                "accessor": lambda arguments: _helper.extract_tool_name(arguments),
+            },
+            {
+                "_comment": "Tool type when finish_type is tool_call", 
+                "attribute": "type",
+                "phase": "post_execution",
+                "accessor": lambda arguments: _helper.extract_tool_type(arguments),
+            },
         ]
     ],
     "events": [

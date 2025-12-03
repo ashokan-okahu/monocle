@@ -7,9 +7,14 @@ import logging
 import json
 from io import BytesIO
 from functools import wraps
+
+from rfc3986 import urlparse
+from monocle_apptrace.instrumentation.common.constants import TOOL_TYPE
 from monocle_apptrace.instrumentation.common.span_handler import SpanHandler
 from monocle_apptrace.instrumentation.common.utils import ( get_exception_message, get_json_dumps, get_status_code,)
 from monocle_apptrace.instrumentation.metamodel.finish_types import map_bedrock_finish_reason_to_finish_type
+from contextlib import suppress
+
 logger = logging.getLogger(__name__)
 
 
@@ -194,3 +199,58 @@ def extract_finish_reason(arguments):
 def map_finish_reason_to_finish_type(finish_reason):
     """Map Bedrock finish_reason/stopReason to finish_type."""
     return map_bedrock_finish_reason_to_finish_type(finish_reason)
+
+def extract_provider_name(instance):
+    return urlparse(instance.meta.endpoint_url).hostname
+
+def _get_first_tool_call(response):
+    """Helper function to extract the first tool call from various Boto response formats"""
+    with suppress(AttributeError, IndexError, TypeError):
+        if "output" in response and "message" in response["output"]:
+            message = response["output"]["message"]
+            if "content" in message and isinstance(message["content"], list):
+                for content_block in reversed(message["content"]):
+                    if "toolUse" in content_block:
+                        return content_block
+
+    return None
+
+def extract_tool_name(arguments):
+    """Extract tool name from Bedrock response when finish_type is tool_call"""
+    try:
+        finish_type = map_finish_reason_to_finish_type(extract_finish_reason(arguments))
+        if finish_type != "tool_call":
+            return None
+
+        tool_call = _get_first_tool_call(arguments["result"])
+        if not tool_call:
+            return None
+
+        for getter in [
+            lambda tc: tc["toolUse"]["name"],  # dict with name key
+        ]:
+            try:
+                return getter(tool_call)
+            except (KeyError, AttributeError, TypeError):
+                continue
+
+    except Exception as e:
+        logger.warning("Warning: Error occurred in extract_tool_name: %s", str(e))
+
+    return None
+
+def extract_tool_type(arguments):
+    """Extract tool type from Bedrock response when finish_type is tool_call"""
+    try:
+        finish_type = map_finish_reason_to_finish_type(extract_finish_reason(arguments))
+        if finish_type != "tool_call":
+            return None
+
+        tool_name = extract_tool_name(arguments)
+        if tool_name:
+            return TOOL_TYPE
+
+    except Exception as e:
+        logger.warning("Warning: Error occurred in extract_tool_type: %s", str(e))
+
+    return None

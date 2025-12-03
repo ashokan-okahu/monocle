@@ -77,19 +77,19 @@ class FastAPISpanHandler(SpanHandler):
         fastapi_pre_tracing(scope)
         return super().pre_tracing(to_wrap, wrapped, instance, args, kwargs)
 
-    def post_tracing(self, to_wrap, wrapped, instance, args, kwargs, return_value):
+    def post_tracing(self, to_wrap, wrapped, instance, args, kwargs, return_value, token):
         fastapi_post_tracing()
-        return super().post_tracing(to_wrap, wrapped, instance, args, kwargs, return_value)
+        return super().post_tracing(to_wrap, wrapped, instance, args, kwargs, return_value, token)
 
 class FastAPIResponseSpanHandler(SpanHandler):
-    def post_tracing(self, to_wrap, wrapped, instance, args, kwargs, return_value):
+    def post_tracing(self, to_wrap, wrapped, instance, args, kwargs, return_value, token):
         try:
             ctx = get_current()
             if ctx is not None:
                 parent_span: Span = ctx.get(_SPAN_KEY)
                 if parent_span is not None:
                     self.hydrate_events(to_wrap, wrapped, instance, args, kwargs,
-                                        return_value, parent_span=parent_span)
+                                        return_value, span=parent_span)
         except Exception as e:
             logger.info(f"Failed to propagate fastapi response: {e}")
-        super().post_tracing(to_wrap, wrapped, instance, args, kwargs, return_value)
+        super().post_tracing(to_wrap, wrapped, instance, args, kwargs, return_value, token)

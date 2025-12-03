@@ -1,17 +1,20 @@
 import logging
 import os
 from contextlib import contextmanager
+from typing import Union
 from opentelemetry.context import get_value, set_value, attach, detach
 from opentelemetry.sdk.trace import Span
+from opentelemetry.trace.span import INVALID_SPAN
 from opentelemetry.trace.status import Status, StatusCode
 from monocle_apptrace.instrumentation.common.constants import (
     QUERY,
     service_name_map,
     service_type_map,
-    MONOCLE_SDK_VERSION, MONOCLE_SDK_LANGUAGE, MONOCLE_DETECTED_SPAN_ERROR
+    MONOCLE_SDK_VERSION, MONOCLE_SDK_LANGUAGE, MONOCLE_DETECTED_SPAN_ERROR,
+    SPAN_TYPES, LAST_INFERENCE
 )
-from monocle_apptrace.instrumentation.common.utils import set_attribute, get_scopes, MonocleSpanException, get_monocle_version
-from monocle_apptrace.instrumentation.common.constants import WORKFLOW_TYPE_KEY, WORKFLOW_TYPE_GENERIC, CHILD_ERROR_CODE
+from monocle_apptrace.instrumentation.common.utils import set_attribute, get_scopes, MonocleSpanException, get_monocle_version, replace_placeholders, propogate_inference_info_to_parent_span
+from monocle_apptrace.instrumentation.common.constants import WORKFLOW_TYPE_KEY, WORKFLOW_TYPE_GENERIC, CHILD_ERROR_CODE, MONOCLE_SKIP_EXECUTIONS, SKIPPED_EXECUTION
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +52,11 @@ class SpanHandler:
         pass
 
     def pre_tracing(self, to_wrap, wrapped, instance, args, kwargs):
-        pass
+        return None, None
 
     def post_tracing(self, to_wrap, wrapped, instance, args, kwargs, return_value, token=None):
-        pass
+        if token:
+            detach(token)
 
     def skip_span(self, to_wrap, wrapped, instance, args, kwargs) -> bool:
         return False
@@ -67,8 +71,6 @@ class SpanHandler:
             span.set_attribute("span.type", span_type)
         else:
             logger.warning("type of span not found or incorrect written in entity json")
-        if "subtype" in output_processor:
-            span.set_attribute("span.subtype", output_processor["subtype"])
         return span_type
 
     def pre_task_processing(self, to_wrap, wrapped, instance, args,kwargs, span):
@@ -101,30 +103,34 @@ class SpanHandler:
         span.set_attribute("span.type", "generic")
 
     def post_task_processing(self, to_wrap, wrapped, instance, args, kwargs, result, ex, span:Span, parent_span:Span):
-        pass
+        propogate_inference_info_to_parent_span(span, parent_span)
 
-    def should_skip(self, processor, instance, args, kwargs) -> bool:
+    def should_skip(self, processor, instance, span, parent_span, args, kwargs) -> bool:
         should_skip = False
         accessor = processor.get('should_skip')
         if accessor:
-            arguments = {"instance":instance, "args":args, "kwargs":kwargs}
-            should_skip = accessor(arguments)
-            if not isinstance(should_skip, bool):
-                logger.warning("Warning: 'should_skip' accessor did not return a boolean value")
-                return True
+            arguments = {"instance":instance, "span":span, "parent_span":parent_span, "args":args, "kwargs":kwargs}
+            try:
+                should_skip = accessor(arguments)
+                if not isinstance(should_skip, bool):
+                    logger.warning("Warning: 'should_skip' accessor did not return a boolean value")
+                    return False
+            except Exception as e:
+                logger.warning("Warning: Error occurred in 'should_skip' accessor: %s", str(e))
         return should_skip
 
-    def hydrate_span(self, to_wrap, wrapped, instance, args, kwargs, result, span, parent_span = None, ex:Exception = None) -> bool:
+    def hydrate_span(self, to_wrap, wrapped, instance, args, kwargs, result, span, parent_span = None,
+                    ex:Exception = None, is_post_exec:bool= False) -> bool:
         try:
-            detected_error_in_attribute = self.hydrate_attributes(to_wrap, wrapped, instance, args, kwargs, result, span, parent_span)
-            detected_error_in_event = self.hydrate_events(to_wrap, wrapped, instance, args, kwargs, result, span, parent_span, ex)
+            detected_error_in_attribute = self.hydrate_attributes(to_wrap, wrapped, instance, args, kwargs, result, span, parent_span, is_post_exec)
+            detected_error_in_event = self.hydrate_events(to_wrap, wrapped, instance, args, kwargs, result, span, parent_span, ex, is_post_exec)
             if detected_error_in_attribute or detected_error_in_event:
                 span.set_attribute(MONOCLE_DETECTED_SPAN_ERROR, True)
         finally:
-            if span.status.status_code == StatusCode.UNSET and ex is None:
+            if is_post_exec and span.status.status_code == StatusCode.UNSET and ex is None:
                 span.set_status(StatusCode.OK)
 
-    def hydrate_attributes(self, to_wrap, wrapped, instance, args, kwargs, result, span:Span, parent_span:Span) -> bool:
+    def hydrate_attributes(self, to_wrap, wrapped, instance, args, kwargs, result, span:Span, parent_span:Span, is_post_exec:bool) -> bool:
         detected_error:bool = False
         span_index = 0
         if SpanHandler.is_root_span(span):
@@ -133,17 +139,24 @@ class SpanHandler:
             output_processor=to_wrap['output_processor']
             self.set_span_type(to_wrap, wrapped, instance, output_processor, span, args, kwargs)
             skip_processors:list[str] = self.skip_processor(to_wrap, wrapped, instance, span, args, kwargs) or []
-
             if 'attributes' in output_processor and 'attributes' not in skip_processors:
                 arguments = {"instance":instance, "args":args, "kwargs":kwargs, "result":result, "parent_span":parent_span, "span":span}
-                subtype = output_processor.get('subtype')
-                if subtype:
-                    try:
-                        span.subtype_result = subtype(arguments)
-                        span.set_attribute("span.subtype", span.subtype_result)
-                    except Exception as e:
-                        logger.debug(f"Error processing subtype: {e}")
+                
+                # During post_execution, we need to find the next available entity index
+                if is_post_exec:
+                    # Find the highest entity index that has any attributes
+                    max_entity_index = 0
+                    for attr_name in span.attributes:
+                        if attr_name.startswith("entity."):
+                            # Extract entity number from attribute like "entity.2.type"
+                            parts = attr_name.split(".")
+                            if len(parts) >= 2 and parts[1].isdigit():
+                                entity_num = int(parts[1])
+                                max_entity_index = max(max_entity_index, entity_num)
+                    span_index = max(span_index, max_entity_index)
+                
                 for processors in output_processor["attributes"]:
+                    entity_has_attributes = False
                     for processor in processors:
                         attribute = processor.get('attribute')
                         accessor = processor.get('accessor')
@@ -151,9 +164,11 @@ class SpanHandler:
                         if attribute and accessor:
                             attribute_name = f"entity.{span_index+1}.{attribute}"
                             try:
-                                processor_result = accessor(arguments)
-                                if processor_result and isinstance(processor_result, (str, list)):
-                                    span.set_attribute(attribute_name, processor_result)
+                                if (not is_post_exec and processor.get('phase', '') != 'post_execution') or (is_post_exec and processor.get('phase', '') == 'post_execution'):
+                                    processor_result = accessor(arguments)
+                                    if processor_result and isinstance(processor_result, (str, list)):
+                                        span.set_attribute(attribute_name, processor_result)
+                                        entity_has_attributes = True
                             except MonocleSpanException as e:
                                 span.set_status(StatusCode.ERROR, e.message)
                                 detected_error = True
@@ -161,24 +176,41 @@ class SpanHandler:
                                 logger.debug(f"Error processing accessor: {e}")
                         else:
                             logger.debug(f"{' and '.join([key for key in ['attribute', 'accessor'] if not processor.get(key)])} not found or incorrect in entity JSON")
-                    span_index += 1
+                    
+                    # Only increment span_index if this entity actually has attributes set
+                    if entity_has_attributes:
+                        span_index += 1
 
         # set scopes as attributes by calling get_scopes()
         # scopes is a Mapping[str:object], iterate directly with .items()
         for scope_key, scope_value in get_scopes().items():
             span.set_attribute(f"scope.{scope_key}", scope_value)
-        
+
         if span_index > 0:
             span.set_attribute("entity.count", span_index)
         return detected_error
 
-    def hydrate_events(self, to_wrap, wrapped, instance, args, kwargs, ret_result, span: Span, parent_span=None, ex:Exception=None) -> bool:
+    def hydrate_events(self, to_wrap, wrapped, instance, args, kwargs, ret_result, span: Span, parent_span=None, ex:Exception=None,
+                       is_post_exec: bool = False) -> bool:
         detected_error:bool = False
         if 'output_processor' in to_wrap and to_wrap["output_processor"] is not None:
             output_processor=to_wrap['output_processor']
-            skip_processors:list[str] = self.skip_processor(to_wrap, wrapped, instance, span, args, kwargs) or []
-
+            if is_post_exec:
+                skip_events:list[str] = ['events.data.input']
+            else:
+                skip_events:list[str] = ['events.data.output', 'events.metadata']
+            skip_processors:list[str] = list(set(self.skip_processor(to_wrap, wrapped, instance, span, args, kwargs) or []).union(set(skip_events)))
             arguments = {"instance": instance, "args": args, "kwargs": kwargs, "result": ret_result, "exception":ex, "parent_span":parent_span, "span": span}
+            subtype = output_processor.get('subtype')
+            if subtype:
+                if callable(subtype):
+                    try:
+                        subtype_result = subtype(arguments)
+                        span.set_attribute("span.subtype", subtype_result)
+                    except Exception as e:
+                        logger.debug(f"Error processing subtype: {e}")
+                else:
+                    span.set_attribute("span.subtype", subtype)
             # Process events if they are defined in the output_processor.
             # In case of inference.modelapi skip the event processing unless the span has an exception
             if 'events' in output_processor and ('events' not in skip_processors or ex is not None):
@@ -207,6 +239,13 @@ class SpanHandler:
                                         event_attributes[attribute_key] = result
                                     else:
                                         event_attributes.update(result)
+                                if not is_post_exec and event_name == "data.input" and attribute_key == "input" and result:
+                                    # append memory to input if available
+                                    # update the result with new input
+                                    pass
+                                elif not detected_error and is_post_exec and event_name == "data.output" and attribute_key == "response" and result:
+                                    # capture memory
+                                    pass
                             except Exception as e:
                                 logger.debug(f"Error evaluating accessor for attribute '{attribute_key}': {e}")
                     matching_timestamp = getattr(ret_result, "timestamps", {}).get(event_name, None)
@@ -306,6 +345,32 @@ class SpanHandler:
         finally:
             SpanHandler.detach_workflow_type(token)
 
+    @staticmethod
+    def get_iput_entity_type(span: Span) -> str:
+        for event in span.events:
+            if event.name == "data.input":
+                return event.attributes.get("entity.type", "")
+
+    @staticmethod
+    def skip_execution(span:Span) -> tuple[bool, Union[dict, list, str, None]]:
+        skip_execs = get_value(MONOCLE_SKIP_EXECUTIONS)
+        if skip_execs is not None:
+            skip_exec_entity = skip_execs.get(span.attributes.get("entity.1.name", ""),{})
+            if ((span.attributes.get("span.type") is not None and skip_exec_entity.get("span.type", "") == span.attributes.get("span.type")) and
+                (span.attributes.get("entity.1.type") is not None and skip_exec_entity.get("entity.type", "") == span.attributes.get("entity.1.type"))):
+                span.set_attribute(SKIPPED_EXECUTION, True)
+                if skip_exec_entity.get("raise_error", False):
+                    raise MonocleSpanException(skip_exec_entity.get("error_message", ""))
+                response = skip_exec_entity.get("response", None)
+                response = replace_placeholders(response, span)
+                return True, response
+        return False, None
+
+    @staticmethod
+    def replace_placeholders_in_response(response: Union[dict, list, str], span:Span) -> Union[dict, list, str]:
+        if span.attributes.get(SKIPPED_EXECUTION, False):
+            return replace_placeholders(response, span)
+        return response
 
 class NonFrameworkSpanHandler(SpanHandler):
     # If the language framework is being executed, then skip generating direct openAI attributes and events
@@ -320,3 +385,5 @@ class NonFrameworkSpanHandler(SpanHandler):
             span.set_attribute("span.type", span_type)
         return span_type
 
+class AgenticSpanHandler(SpanHandler):
+    pass

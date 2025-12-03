@@ -1,15 +1,19 @@
+import ast
 import logging, json
 import os
 import traceback
-from typing import Callable, Generic, Optional, TypeVar, Mapping
+from typing import Callable, Generic, Optional, TypeVar, Mapping, Union
 
 from opentelemetry.context import attach, detach, get_current, get_value, set_value, Context
 from opentelemetry.trace import NonRecordingSpan, Span
 from opentelemetry.trace.propagation import _SPAN_KEY
-from opentelemetry.sdk.trace import id_generator, TracerProvider
+from opentelemetry.sdk.trace import id_generator, TracerProvider, ReadableSpan
 from opentelemetry.propagate import extract
 from opentelemetry import baggage
-from monocle_apptrace.instrumentation.common.constants import MONOCLE_SCOPE_NAME_PREFIX, SCOPE_METHOD_FILE, SCOPE_CONFIG_PATH, llm_type_map, MONOCLE_SDK_VERSION, ADD_NEW_WORKFLOW
+from monocle_apptrace.instrumentation.common.constants import (
+    ANY_AGENT, LAST_INFERENCE, MONOCLE_SCOPE_NAME_PREFIX, SCOPE_METHOD_FILE, SCOPE_CONFIG_PATH, SPAN_TYPES, llm_type_map, MONOCLE_SDK_VERSION, ADD_NEW_WORKFLOW, AGENT_NAME_KEY,
+    AGENT_INVOCATION_SPAN_NAME, LAST_AGENT_INVOCATION_ID, LAST_AGENT_NAME, INFERENCE_DECISION, INFERENCE_AGENT_DELEGATION, INFERENCE_TOOL_CALL, INFERENCE_TURN_END, SPAN_SUBTYPES
+)
 from importlib.metadata import version
 from opentelemetry.trace.span import INVALID_SPAN
 _MONOCLE_SPAN_KEY = "monocle" + _SPAN_KEY
@@ -217,12 +221,15 @@ def remove_scopes(token:object) -> None:
     if token is not None:
         detach(token)
 
-def get_scopes() -> dict[str, object]:
+def get_scopes(scope_name: Optional[str] = None) -> dict[str, object]:
     monocle_scopes:dict[str, object] = {}
     for key, val in baggage.get_all().items():
-        if key.startswith(MONOCLE_SCOPE_NAME_PREFIX):
+        if key.startswith(MONOCLE_SCOPE_NAME_PREFIX) and (scope_name is None or key == f"{MONOCLE_SCOPE_NAME_PREFIX}{scope_name}"):
             monocle_scopes[key[len(MONOCLE_SCOPE_NAME_PREFIX):]] = val
     return monocle_scopes
+
+def is_scope_set(scepe_name: str) -> bool:
+    return len(get_scopes(scepe_name)) > 0
 
 def get_baggage_for_scopes():
     baggage_context:Context = None
@@ -357,7 +364,7 @@ class Option(Generic[T]):
 
     def and_then(self, func: Callable[[T], 'Option[U]']) -> 'Option[U]':
         if self.is_some():
-            return func(self.value)
+            return Option(func(self.value))
         return Option(None)
 
 # Example usage
@@ -468,3 +475,145 @@ def get_current_monocle_span(context: Optional[Context] = None) -> Span:
     if span is None or not isinstance(span, Span):
         return INVALID_SPAN
     return span
+
+def get_input_event_from_span(events: list[dict], search_key:str) -> Optional[Mapping]:
+    """Extract the 'data.input' event from the span if it exists.
+
+    Args:
+        span: The Span to extract the event from.
+
+    Returns:
+        The 'data.input' event if it exists, None otherwise.
+    """
+    input_request = None
+    for event in events:
+        if event.name == "data.input":
+            try:
+                #load the input attribute as dictionary from string
+                try:
+                    input_dict = json.loads(event.attributes.get("input", "{}"))
+                except Exception as e:
+                    if isinstance(e, json.JSONDecodeError):
+                        input_dict = ast.literal_eval(event.attributes.get("input", {}))
+                    else:
+                        raise
+                if search_key in input_dict:
+                    input_request = input_dict[search_key]
+            except Exception as e:
+                logger.debug(f"Error parsing input event attribute: {e}")
+            break
+    return input_request
+
+def replace_placeholders(obj: Union[dict, list, str], span: Span) -> Union[dict, list, str]:
+    """Replace placeholders in strings with span context values."""
+    if isinstance(obj, dict):
+        return {k: replace_placeholders(v, span) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [replace_placeholders(item, span) for item in obj]
+    elif isinstance(obj, str):
+        startIndex = 0
+        while True:
+            start = obj.find("{{", startIndex)
+            end = obj.find("}}", start + 2)
+            if start == -1 or end == -1:
+                break
+            key = obj[start + 2:end].strip()
+            value = get_input_event_from_span(span.events, key)
+            if value is not None:
+                obj = obj[:start] + str(value) + obj[end + 2:]
+            startIndex = start + len(str(value))
+            if startIndex >= len(obj):
+                break
+        return obj
+    else:
+        return obj
+
+def propogate_agent_name_to_parent_span(span: Span, parent_span: Span):
+    """Propagate agent name from child span to parent span."""
+    if span.attributes.get("span.type") != AGENT_INVOCATION_SPAN_NAME:
+        return
+    if parent_span is not None:
+        parent_span.set_attribute(LAST_AGENT_INVOCATION_ID, hex(span.context.span_id))
+        agent_name = get_value(AGENT_NAME_KEY)
+        if agent_name is not None:
+            parent_span.set_attribute(LAST_AGENT_NAME, agent_name)
+    span.set_attribute(LAST_AGENT_INVOCATION_ID, "")
+    span.set_attribute(LAST_AGENT_NAME, "")
+
+def propogate_inference_info_to_parent_span(span: Span, parent_span: Span):
+    """Propagate inference information from child span to parent span. Copy the parent span's last inference id to tool spans.
+        This way we link the inference span that's resulted in the tool call or agent delegation decision to the tool/agent invocation span."""
+    if parent_span is not None and parent_span != INVALID_SPAN:
+        ## save last inference id in parent span
+        if span.attributes.get("span.type") in [SPAN_TYPES.INFERENCE, SPAN_TYPES.INFERENCE_FRAMEWORK]:
+            if span.attributes.get("span.subtype") in [INFERENCE_AGENT_DELEGATION, INFERENCE_TOOL_CALL]:
+                parent_span.set_attribute(LAST_INFERENCE, f"{hex(span.context.span_id)}:{span.attributes.get('entity.3.name', '')}")
+            elif span.attributes.get("span.subtype") == INFERENCE_TURN_END:
+                parent_span.set_attribute(LAST_INFERENCE, f"{hex(span.context.span_id)}:{ANY_AGENT}")
+        # copy last infernce span id from parent span to tool span
+        elif span.attributes.get("span.type") in [SPAN_TYPES.AGENTIC_TOOL_INVOCATION, SPAN_TYPES.AGENTIC_INVOCATION]:
+            if LAST_INFERENCE in parent_span.attributes and verify_tool_names_in_spans(span, parent_span):
+                span.set_attribute(INFERENCE_DECISION, parent_span.attributes.get(LAST_INFERENCE).split(":")[0])
+                parent_span.set_attribute(LAST_INFERENCE, "")
+
+        # propagate last inference id from child span to parent span
+        if span.attributes.get(LAST_INFERENCE, "") != "" and  (
+                span.attributes.get("span.type") not in [SPAN_TYPES.AGENTIC_DELEGATION] \
+                or parent_span.attributes.get("span.subtype", "") not in [SPAN_SUBTYPES.ROUTING]
+        ):
+            parent_span.set_attribute(LAST_INFERENCE, span.attributes.get(LAST_INFERENCE))
+
+def verify_tool_names_in_spans(span: Span, parent_span: Span) -> bool:
+    """Compare tool names in child and parent spans to check if they match."""
+    if span is None or parent_span is None or span == INVALID_SPAN or parent_span == INVALID_SPAN:
+        return False
+
+    tool_name_from_agentic_span = span.attributes.get("entity.1.name", None)
+    tool_name_from_inference_span = parent_span.attributes.get(LAST_INFERENCE, None)
+    if tool_name_from_agentic_span is not None and tool_name_from_inference_span is not None:
+        tool_name_from_inference_span = tool_name_from_inference_span.split(":")[1]
+        if span.attributes.get("span.type") == SPAN_TYPES.AGENTIC_INVOCATION and tool_name_from_inference_span == ANY_AGENT:
+            return True
+        # In case of agentic delegation, tool names may be prefixed with agent name, so we check for containment
+        return tool_name_from_agentic_span in tool_name_from_inference_span
+    return False
+
+def extract_from_agent_invocation_id(parent_span):
+    if parent_span is not None:
+        return parent_span.attributes.get(LAST_AGENT_INVOCATION_ID)
+    return None
+
+def extract_from_agent_name(parent_span):
+    if parent_span is not None:
+        return parent_span.attributes.get(LAST_AGENT_NAME)
+    return None
+# Store original to_json method for monkey-patching
+_original_to_json = None
+
+def _remove_0x_prefix(obj):
+    """Recursively remove 0x prefix from hex strings in a JSON object."""
+    if isinstance(obj, dict):
+        return {k: _remove_0x_prefix(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_remove_0x_prefix(item) for item in obj]
+    elif isinstance(obj, str) and obj.startswith("0x"):
+        return obj[2:]
+    return obj
+
+def _patched_to_json(self, indent=None):
+    """Patched to_json that removes 0x prefix from trace_id/span_id/parent_id."""
+    global _original_to_json
+    original_json = _original_to_json(self, indent=indent)
+    obj = json.loads(original_json)
+    obj = _remove_0x_prefix(obj)
+    if indent is None:
+        return json.dumps(obj, separators=(',', ':'))
+    else:
+        return json.dumps(obj, indent=indent)
+
+def setup_readablespan_patch():
+    """Apply monkey-patch to ReadableSpan.to_json to remove 0x prefix from trace/span IDs."""
+    global _original_to_json
+    if _original_to_json is None:
+        _original_to_json = ReadableSpan.to_json
+        ReadableSpan.to_json = _patched_to_json
